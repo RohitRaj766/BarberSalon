@@ -137,13 +137,13 @@ export default function BookingForm({ onSuccess }: BookingFormProps): React.Reac
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
       {step === "details" ? (
         <>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Name Input */}
             <div>
-              <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="name" className="block text-xs sm:text-sm font-semibold text-white mb-2">
                 <span className="inline-flex items-center gap-2">
                   <span>👤</span>
                   Full Name
@@ -156,24 +156,24 @@ export default function BookingForm({ onSuccess }: BookingFormProps): React.Reac
                 onChange={handleNameChange}
                 placeholder="John Doe"
                 required
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-200 ${
                   nameError
-                    ? "border-red-300 bg-red-50"
-                    : "border-gray-200 bg-gray-50 focus:bg-white"
-                }`}
+                    ? "border-red-400 bg-red-500/20 text-white placeholder-red-200"
+                    : "border-white/30 bg-white/10 text-white placeholder-white/50 focus:bg-white/20"
+                } backdrop-blur-sm`}
               />
               {nameError && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-200 flex items-center gap-1 bg-red-500/20 backdrop-blur-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg">
                   <span>⚠️</span>
-                  {nameError}
+                  <span className="break-words">{nameError}</span>
                 </p>
               )}
-              <p className="mt-1 text-xs text-gray-500">Only letters and spaces allowed</p>
+              <p className="mt-1.5 sm:mt-2 text-xs text-white/70">Only letters and spaces allowed</p>
             </div>
 
             {/* Phone Input */}
             <div>
-              <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="phone" className="block text-xs sm:text-sm font-semibold text-white mb-2">
                 <span className="inline-flex items-center gap-2">
                   <span>📱</span>
                   Phone Number
@@ -187,29 +187,29 @@ export default function BookingForm({ onSuccess }: BookingFormProps): React.Reac
                 placeholder="9876543210"
                 required
                 maxLength={10}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-200 ${
                   phoneError
-                    ? "border-red-300 bg-red-50"
-                    : "border-gray-200 bg-gray-50 focus:bg-white"
-                }`}
+                    ? "border-red-400 bg-red-500/20 text-white placeholder-red-200"
+                    : "border-white/30 bg-white/10 text-white placeholder-white/50 focus:bg-white/20"
+                } backdrop-blur-sm`}
               />
               {phoneError && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-200 flex items-center gap-1 bg-red-500/20 backdrop-blur-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg">
                   <span>⚠️</span>
-                  {phoneError}
+                  <span className="break-words">{phoneError}</span>
                 </p>
               )}
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1.5 sm:mt-2 text-xs text-white/70">
                 {phone.length}/10 digits {phone.length === 10 && "✓"}
               </p>
             </div>
           </div>
 
           {error && (
-            <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
-              <p className="text-sm text-red-700 flex items-center gap-2">
+            <div className="p-3 sm:p-4 bg-red-500/20 border border-red-500/50 backdrop-blur-sm rounded-lg sm:rounded-xl">
+              <p className="text-xs sm:text-sm text-red-200 flex items-center gap-2">
                 <span>❌</span>
-                {error}
+                <span className="break-words">{error}</span>
               </p>
             </div>
           )}
@@ -217,7 +217,7 @@ export default function BookingForm({ onSuccess }: BookingFormProps): React.Reac
           <button
             type="submit"
             disabled={loading || !name || !phone || !!nameError || !!phoneError}
-            className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg sm:rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:scale-[1.02] active:scale-[0.98]"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -226,7 +226,8 @@ export default function BookingForm({ onSuccess }: BookingFormProps): React.Reac
               </span>
             ) : (
               <span className="flex items-center justify-center gap-2">
-                Next: Select Time Slot
+                <span className="hidden sm:inline">Next: Select Time Slot</span>
+                <span className="sm:hidden">Next Step</span>
                 <span>→</span>
               </span>
             )}
@@ -234,51 +235,55 @@ export default function BookingForm({ onSuccess }: BookingFormProps): React.Reac
         </>
       ) : (
         <>
-          <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200">
-            <p className="text-sm text-gray-600 mb-1">Booking for</p>
-            <p className="font-bold text-gray-900 text-lg">{name}</p>
-            <p className="text-sm text-gray-600">{phone}</p>
+          <div className="p-3 sm:p-4 md:p-5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm rounded-xl sm:rounded-2xl border-2 border-purple-400/30 shadow-lg">
+            <p className="text-xs sm:text-sm text-purple-200 mb-1 sm:mb-2">Booking for</p>
+            <p className="font-bold text-white text-base sm:text-lg md:text-xl break-words">{name}</p>
+            <p className="text-xs sm:text-sm text-purple-200 flex items-center gap-1 mt-1">
+              <span>📱</span>
+              {phone}
+            </p>
           </div>
 
           <SlotSelector onSlotSelect={handleSlotSelect} />
 
           {error && (
-            <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
-              <p className="text-sm text-red-700 flex items-center gap-2">
+            <div className="p-3 sm:p-4 bg-red-500/20 border border-red-500/50 backdrop-blur-sm rounded-lg sm:rounded-xl">
+              <p className="text-xs sm:text-sm text-red-200 flex items-center gap-2">
                 <span>❌</span>
-                {error}
+                <span className="break-words">{error}</span>
               </p>
             </div>
           )}
 
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() => {
                 setStep("details");
                 setError("");
               }}
-              className="flex-1 px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all duration-200"
+              className="flex-1 px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-sm sm:text-base border-2 border-white/30 bg-white/10 backdrop-blur-sm text-white rounded-lg sm:rounded-xl font-semibold hover:bg-white/20 transition-all duration-200 shadow-md hover:shadow-lg"
             >
-              <span className="flex items-center justify-center gap-2">
+              <span className="flex items-center justify-center gap-1 sm:gap-2">
                 <span>←</span>
-                Back
+                <span className="hidden sm:inline">Back</span>
               </span>
             </button>
             <button
               type="submit"
               disabled={loading || !selectedDate || !selectedTime}
-              className="flex-1 px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
+              className="flex-1 px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-sm sm:text-base bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg sm:rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:scale-[1.02] active:scale-[0.98]"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="animate-spin">⏳</span>
-                  Booking...
+                  <span className="hidden sm:inline">Booking...</span>
                 </span>
               ) : (
-                <span className="flex items-center justify-center gap-2">
+                <span className="flex items-center justify-center gap-1 sm:gap-2">
                   <span>✓</span>
-                  Confirm Booking
+                  <span className="hidden sm:inline">Confirm Booking</span>
+                  <span className="sm:hidden">Confirm</span>
                 </span>
               )}
             </button>

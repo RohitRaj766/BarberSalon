@@ -47,11 +47,23 @@ export default function PublicQueueDisplay(): React.ReactElement {
   }, []);
 
   if (loading) {
-    return <div className="text-center py-8">Loading queue...</div>;
+    return (
+      <div className="text-center py-16">
+        <div className="inline-block animate-spin text-6xl mb-4">⏳</div>
+        <p className="text-white font-medium text-lg">Loading queue...</p>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="p-4 bg-red-100 text-red-700 rounded-lg">{error}</div>;
+    return (
+      <div className="p-6 bg-red-500/20 border border-red-500/50 backdrop-blur-sm rounded-2xl">
+        <p className="text-red-200 flex items-center gap-2 justify-center">
+          <span className="text-2xl">⚠️</span>
+          {error}
+        </p>
+      </div>
+    );
   }
 
   // Get unique dates
@@ -82,7 +94,7 @@ export default function PublicQueueDisplay(): React.ReactElement {
     <div className="space-y-6">
       {/* Date Tabs */}
       {uniqueDates.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-1 px-1">
           {uniqueDates.map((date) => {
             // Determine label based on actual system dates
             let label = date;
@@ -98,14 +110,14 @@ export default function PublicQueueDisplay(): React.ReactElement {
               <button
                 key={date}
                 onClick={() => setSelectedDate(date)}
-                className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition ${
+                className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold whitespace-nowrap transition-all duration-300 shadow-md hover:shadow-xl transform hover:scale-105 text-sm sm:text-base ${
                   selectedDate === date
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white scale-105"
+                    : "bg-white/10 backdrop-blur-sm text-white border border-white/20 hover:bg-white/20"
                 }`}
               >
-                <div>{label}</div>
-                <div className="text-xs opacity-75">{formatDate(displayDate)}</div>
+                <div className="font-bold">{label}</div>
+                <div className="text-xs opacity-75 mt-0.5 sm:mt-1">{formatDate(displayDate)}</div>
               </button>
             );
           })}
@@ -114,33 +126,37 @@ export default function PublicQueueDisplay(): React.ReactElement {
 
       {/* Current Service Info */}
       {currentBooking && (
-        <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white rounded-2xl p-6 space-y-3 shadow-xl">
-          <div className="text-sm opacity-90 font-medium">🔥 Currently Serving</div>
-          <div className="text-5xl font-bold">#{currentBooking.serialNumber}</div>
-          <div className="text-xl font-semibold">{currentBooking.name}</div>
-          <div className="flex items-center gap-4 text-sm opacity-90 pt-2 border-t border-white/20">
-            <span className="flex items-center gap-1">
-              🕐 {formatTime(new Date(currentBooking.slotTime))}
+        <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 space-y-3 sm:space-y-4 shadow-2xl animate-pulse-glow">
+          <div className="text-xs sm:text-sm opacity-90 font-semibold flex items-center gap-1 sm:gap-2">
+            <span className="text-base sm:text-lg md:text-xl">🔥</span>
+            <span>Currently Serving</span>
+          </div>
+          <div className="text-5xl sm:text-6xl md:text-7xl font-bold drop-shadow-lg">#{currentBooking.queuePosition}</div>
+          <div className="text-xl sm:text-2xl md:text-3xl font-bold break-words">{currentBooking.name}</div>
+          <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm md:text-base opacity-90 pt-2 sm:pt-3 border-t border-white/30">
+            <span className="flex items-center gap-1 sm:gap-2 bg-white/20 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl">
+              <span>🕐</span>
+              {formatTime(new Date(currentBooking.slotTime))}
             </span>
           </div>
         </div>
       )}
 
       {/* Queue List */}
-      <div className="space-y-3">
-        <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-          <span className="text-2xl">📋</span>
-          Queue for {selectedDate === actualTodayStr ? "Today" : selectedDate === actualTomorrowStr ? "Tomorrow" : formatDate(new Date(selectedDate))}
+      <div className="space-y-3 sm:space-y-4">
+        <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white flex items-center gap-2">
+          <span className="text-2xl sm:text-3xl">📋</span>
+          <span className="break-words">Queue for {selectedDate === actualTodayStr ? "Today" : selectedDate === actualTomorrowStr ? "Tomorrow" : formatDate(new Date(selectedDate))}</span>
         </h3>
 
         {dateBookings.length === 0 ? (
-          <div className="p-8 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl text-center border-2 border-gray-200">
-            <p className="text-6xl mb-3">🎉</p>
-            <p className="text-gray-600 font-medium">No bookings for this date</p>
-            <p className="text-sm text-gray-400 mt-1">Be the first to book!</p>
+          <div className="p-8 sm:p-10 md:p-12 bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm rounded-2xl sm:rounded-3xl text-center border-2 border-white/20">
+            <p className="text-5xl sm:text-6xl md:text-7xl mb-3 sm:mb-4 animate-bounce">🎉</p>
+            <p className="text-white font-semibold text-base sm:text-lg md:text-xl">No bookings for this date</p>
+            <p className="text-purple-200 mt-1 sm:mt-2 text-sm sm:text-base">Be the first to book!</p>
           </div>
         ) : (
-          <div className="space-y-3 max-h-96 overflow-y-auto">
+          <div className="space-y-2 sm:space-y-3 max-h-[400px] sm:max-h-[500px] md:max-h-[600px] overflow-y-auto pr-1 sm:pr-2">
             {dateBookings.map((booking, index) => {
               const isNext = index === 0 && booking.status === "PENDING";
               const isPast = booking.status === "COMPLETED";
@@ -148,62 +164,54 @@ export default function PublicQueueDisplay(): React.ReactElement {
               return (
                 <div
                   key={booking.id}
-                  className={`p-5 rounded-2xl border-2 transition-all shadow-sm hover:shadow-md ${
+                  className={`p-4 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl border-2 transition-all shadow-lg hover:shadow-2xl transform hover:scale-[1.02] ${
                     isNext
-                      ? "border-green-400 bg-gradient-to-r from-green-50 to-green-100 shadow-md"
+                      ? "border-green-400/50 bg-gradient-to-r from-green-500/20 to-green-600/20 backdrop-blur-sm shadow-green-500/20"
                       : isPast
-                      ? "border-gray-300 bg-gray-50 opacity-60"
-                      : "border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50"
+                      ? "border-white/10 bg-white/5 backdrop-blur-sm opacity-60"
+                      : "border-purple-400/30 bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm"
                   }`}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className={`px-3 py-1 rounded-lg font-bold text-xl shadow-sm ${
+                  <div className="flex items-start justify-between gap-2 sm:gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-2 sm:mb-3">
+                        <div className={`px-2.5 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-lg sm:rounded-xl font-bold text-lg sm:text-xl md:text-2xl shadow-lg flex-shrink-0 ${
                           isNext
-                            ? "bg-gradient-to-r from-green-500 to-green-600 text-white"
+                            ? "bg-gradient-to-r from-green-500 to-green-600 text-white animate-pulse"
                             : isPast
-                            ? "bg-gray-400 text-white"
+                            ? "bg-gray-600 text-white"
                             : "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
                         }`}>
-                          #{booking.serialNumber}
+                          #{booking.queuePosition}
                         </div>
-                        <div>
-                          <p className="font-bold text-gray-900 text-lg">{booking.name}</p>
+                        <div className="min-w-0">
+                          <p className="font-bold text-white text-base sm:text-lg md:text-xl truncate">{booking.name}</p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-gray-700 flex items-center gap-1 justify-end">
-                        🕐 {formatTime(new Date(booking.slotTime))}
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-xs sm:text-sm font-semibold text-white flex items-center gap-1 sm:gap-2 justify-end mb-2 sm:mb-3 bg-white/10 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-2 rounded-lg sm:rounded-xl">
+                        <span>🕐</span>
+                        <span className="whitespace-nowrap">{formatTime(new Date(booking.slotTime))}</span>
                       </p>
-                      <p className="text-xs mt-2">
+                      <p className="text-xs">
                         {isPast ? (
-                          <span className="px-2 py-1 bg-green-600 text-white rounded-full font-medium text-xs">
-                            ✓ Completed
+                          <span className="px-2 sm:px-3 py-1 sm:py-2 bg-green-600/80 backdrop-blur-sm text-white rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm shadow-md whitespace-nowrap">
+                            ✓ <span className="hidden sm:inline">Completed</span>
                           </span>
                         ) : isNext ? (
-                          <span className="px-2 py-1 bg-green-500 text-white rounded-full font-medium text-xs animate-pulse">
-                            🔥 Now Serving
+                          <span className="px-2 sm:px-3 py-1 sm:py-2 bg-green-500 text-white rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm animate-pulse shadow-lg whitespace-nowrap">
+                            🔥 <span className="hidden sm:inline">Now Serving</span>
                           </span>
                         ) : (
-                          <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full font-medium text-xs">
-                            ⏳ Waiting
+                          <span className="px-2 sm:px-3 py-1 sm:py-2 bg-purple-500/30 backdrop-blur-sm border border-purple-400/50 text-purple-100 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm whitespace-nowrap">
+                            ⏳ <span className="hidden sm:inline">Waiting</span>
                           </span>
                         )}
                       </p>
                     </div>
                   </div>
-
-                  {/* Wait time estimate */}
-                  {!isPast && booking.status === "PENDING" && !isNext && (
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <p className="text-xs text-gray-600 flex items-center gap-1">
-                        ⏰ Estimated time: <span className="font-semibold">{formatTime(new Date(booking.estimatedTime))}</span>
-                      </p>
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -211,21 +219,7 @@ export default function PublicQueueDisplay(): React.ReactElement {
         )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-5 shadow-sm">
-          <p className="text-sm text-blue-600 font-medium mb-1">⏳ In Queue</p>
-          <p className="text-4xl font-bold text-blue-700">
-            {dateBookings.filter((b) => b.status === "PENDING").length}
-          </p>
-        </div>
-        <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-xl p-5 shadow-sm">
-          <p className="text-sm text-green-600 font-medium mb-1">✓ Completed</p>
-          <p className="text-4xl font-bold text-green-700">
-            {dateBookings.filter((b) => b.status === "COMPLETED").length}
-          </p>
-        </div>
-      </div>
+  
     </div>
   );
 }

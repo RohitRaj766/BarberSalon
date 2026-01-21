@@ -80,24 +80,36 @@ export async function PATCH(
       data: { status: body.status as "PENDING" | "COMPLETED" | "CANCELLED" },
     });
 
-    // If marking as completed, recalculate queue positions for remaining pending bookings
+    // If marking as completed, recalculate queue positions for remaining bookings on the same date
     if (body.status === "COMPLETED" || body.status === "CANCELLED") {
-      const pendingBookings = await prisma.booking.findMany({
+      // Get the booking date range
+      const startOfDay = new Date(booking.bookingDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      
+      const endOfDay = new Date(booking.bookingDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      // Get all bookings for this date ordered by slot time
+      const dateBookings = await prisma.booking.findMany({
         where: {
-          status: "PENDING",
+          bookingDate: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+          status: { in: ["PENDING", "COMPLETED"] },
         },
         orderBy: {
-          queuePosition: "asc",
+          slotTime: "asc", // Order by slot time
         },
       });
 
-      // Recalculate queue positions
-      for (let i = 0; i < pendingBookings.length; i++) {
+      // Recalculate queue positions based on slot time order
+      for (let i = 0; i < dateBookings.length; i++) {
         const newPosition = i + 1;
-        const newEstimatedTime = calculateEstimatedTime(newPosition);
+        const newEstimatedTime = calculateEstimatedTime(newPosition, dateBookings[i].bookingDate);
 
         await prisma.booking.update({
-          where: { id: pendingBookings[i].id },
+          where: { id: dateBookings[i].id },
           data: {
             queuePosition: newPosition,
             estimatedTime: newEstimatedTime,
@@ -152,22 +164,35 @@ export async function DELETE(
       where: { id },
     });
 
-    // Recalculate queue positions for remaining pending bookings
-    const pendingBookings = await prisma.booking.findMany({
+    // Recalculate queue positions for remaining bookings on the same date
+    // Get the booking date range
+    const startOfDay = new Date(booking.bookingDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(booking.bookingDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Get all bookings for this date ordered by slot time
+    const dateBookings = await prisma.booking.findMany({
       where: {
-        status: "PENDING",
+        bookingDate: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+        status: { in: ["PENDING", "COMPLETED"] },
       },
       orderBy: {
-        queuePosition: "asc",
+        slotTime: "asc", // Order by slot time
       },
     });
 
-    for (let i = 0; i < pendingBookings.length; i++) {
+    // Recalculate queue positions based on slot time order
+    for (let i = 0; i < dateBookings.length; i++) {
       const newPosition = i + 1;
-      const newEstimatedTime = calculateEstimatedTime(newPosition);
+      const newEstimatedTime = calculateEstimatedTime(newPosition, dateBookings[i].bookingDate);
 
       await prisma.booking.update({
-        where: { id: pendingBookings[i].id },
+        where: { id: dateBookings[i].id },
         data: {
           queuePosition: newPosition,
           estimatedTime: newEstimatedTime,

@@ -15,6 +15,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       },
       orderBy: [
         { bookingDate: "asc" },
+        { slotTime: "asc" }, // Sort by slot time (5pm before 6pm)
         { queuePosition: "asc" },
       ],
     });

@@ -52,22 +52,34 @@ export default function SlotSelector({ onSlotSelect }: SlotSelectorProps): React
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading available slots...</div>;
+    return (
+      <div className="text-center py-12">
+        <div className="inline-block animate-spin text-5xl mb-4">⏳</div>
+        <p className="text-white font-medium">Loading available slots...</p>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="p-4 bg-red-100 text-red-700 rounded-lg">{error}</div>;
+    return (
+      <div className="p-4 bg-red-500/20 border border-red-500/50 backdrop-blur-sm rounded-xl">
+        <p className="text-red-200 flex items-center gap-2">
+          <span>⚠️</span>
+          {error}
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Date Selection */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+        <label className="block text-xs sm:text-sm font-semibold text-white mb-2 sm:mb-3 flex items-center gap-2">
           <span>📅</span>
           Select Date
         </label>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
           {days.map((day, index) => {
             // Don't adjust dates - they're already correct from API
             const displayDate = new Date(day.date);
@@ -77,18 +89,19 @@ export default function SlotSelector({ onSlotSelect }: SlotSelectorProps): React
             return (
               <button
                 key={day.date}
+                type="button"
                 onClick={() => {
                   setSelectedDate(day.date);
                   setSelectedTime("");
                 }}
-                className={`p-4 rounded-xl border-2 transition-all font-medium shadow-sm hover:shadow-md ${
+                className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all font-semibold shadow-md hover:shadow-xl transform hover:scale-105 ${
                   selectedDate === day.date
-                    ? "border-purple-600 bg-gradient-to-r from-purple-50 to-pink-50 text-purple-900 shadow-md"
-                    : "border-gray-200 bg-white text-gray-700 hover:border-purple-300"
+                    ? "border-purple-400 bg-gradient-to-r from-purple-500/30 to-pink-500/30 backdrop-blur-sm text-white scale-105"
+                    : "border-white/30 bg-white/10 backdrop-blur-sm text-white hover:border-purple-400/50 hover:bg-white/20"
                 }`}
               >
-                <div className="text-base font-bold">{label}</div>
-                <div className="text-xs text-gray-500 mt-1">{formatDate(displayDate)}</div>
+                <div className="text-sm sm:text-base font-bold">{label}</div>
+                <div className="text-xs opacity-75 mt-0.5 sm:mt-1">{formatDate(displayDate)}</div>
               </button>
             );
           })}
@@ -97,33 +110,35 @@ export default function SlotSelector({ onSlotSelect }: SlotSelectorProps): React
 
       {/* Time Slot Selection */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+        <label className="block text-xs sm:text-sm font-semibold text-white mb-2 sm:mb-3 flex items-center gap-2">
           <span>🕐</span>
           Select Time Slot
         </label>
-        <div className="grid grid-cols-3 gap-2 max-h-96 overflow-y-auto p-1">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 max-h-64 sm:max-h-80 md:max-h-96 overflow-y-auto p-0.5 sm:p-1">
           {slots.map((slot: AvailableSlot) => (
             <button
               key={slot.time}
+              type="button"
               onClick={() => handleTimeSelect(slot.time)}
               disabled={!slot.available}
-              className={`p-3 rounded-xl border-2 transition-all text-sm font-medium shadow-sm ${
+              className={`p-2 sm:p-2.5 md:p-3 rounded-lg sm:rounded-xl border-2 transition-all text-xs sm:text-sm font-semibold shadow-md ${
                 selectedTime === slot.time
-                  ? "border-purple-600 bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md scale-105"
+                  ? "border-purple-400 bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xl scale-105 sm:scale-110"
                   : !slot.available
-                  ? "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed opacity-60"
-                  : "border-gray-200 bg-white text-gray-700 hover:border-purple-300 hover:shadow-md hover:scale-105"
+                  ? "border-white/10 bg-white/5 backdrop-blur-sm text-white/40 cursor-not-allowed opacity-50"
+                  : "border-white/30 bg-white/10 backdrop-blur-sm text-white hover:border-purple-400/50 hover:shadow-lg hover:scale-105 hover:bg-white/20"
               }`}
             >
-              <div className="font-bold">{slot.time}</div>
-              <div className={`text-xs mt-1 ${
+              <div className="font-bold text-xs sm:text-sm">{slot.time}</div>
+              <div className={`text-[10px] sm:text-xs mt-0.5 sm:mt-1 ${
                 selectedTime === slot.time
                   ? "text-white/90"
                   : !slot.available
-                  ? "text-red-500 font-semibold"
-                  : "text-green-600 font-semibold"
+                  ? "text-red-300 font-semibold"
+                  : "text-green-300 font-semibold"
               }`}>
-                {!slot.available ? "🔒 Booked" : "✓ Available"}
+                {!slot.available ? "🔒" : "✓"}
+                <span className="hidden sm:inline ml-1">{!slot.available ? "Booked" : "Available"}</span>
               </div>
             </button>
           ))}
@@ -132,9 +147,12 @@ export default function SlotSelector({ onSlotSelect }: SlotSelectorProps): React
 
       {/* Selection Summary */}
       {selectedDate && selectedTime && (
-        <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl shadow-sm">
-          <p className="text-sm text-purple-600 font-semibold mb-1">✓ Selected Slot</p>
-          <p className="text-lg font-bold text-purple-900">
+        <div className="p-3 sm:p-4 md:p-5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm border-2 border-purple-400/30 rounded-xl sm:rounded-2xl shadow-lg animate-float">
+          <p className="text-xs sm:text-sm text-purple-200 font-semibold mb-1 sm:mb-2 flex items-center gap-2">
+            <span>✓</span>
+            Selected Slot
+          </p>
+          <p className="text-base sm:text-lg md:text-xl font-bold text-white break-words">
             {formatDate(new Date(selectedDate))} at {selectedTime}
           </p>
         </div>
