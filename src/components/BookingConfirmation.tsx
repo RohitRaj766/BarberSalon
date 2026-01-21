@@ -56,18 +56,18 @@ export default function BookingConfirmation({ booking }: BookingConfirmationProp
       </div>
 
       <div className="pt-4 border-t border-green-200 space-y-2">
-        <Link
+        {/* <Link
           href="/queue"
           className="block text-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
         >
           View Live Queue
-        </Link>
-        <Link
+        </Link> */}
+        {/* <Link
           href={`/status/${booking.id}`}
           className="block text-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition"
         >
           Track Your Booking
-        </Link>
+        </Link> */}
       </div>
     </div>
   );

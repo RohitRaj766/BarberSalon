@@ -197,13 +197,13 @@ export default function PublicQueueDisplay(): React.ReactElement {
                   </div>
 
                   {/* Wait time estimate */}
-                  {!isPast && booking.status === "PENDING" && !isNext && (
+                  {/* {!isPast && booking.status === "PENDING" && !isNext && (
                     <div className="mt-3 pt-3 border-t border-gray-200">
                       <p className="text-xs text-gray-600 flex items-center gap-1">
                         ⏰ Estimated time: <span className="font-semibold">{formatTime(new Date(booking.estimatedTime))}</span>
                       </p>
                     </div>
-                  )}
+                  )} */}
                 </div>
               );
             })}

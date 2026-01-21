@@ -77,6 +77,7 @@ export default function SlotSelector({ onSlotSelect }: SlotSelectorProps): React
             return (
               <button
                 key={day.date}
+                type="button"
                 onClick={() => {
                   setSelectedDate(day.date);
                   setSelectedTime("");
@@ -105,6 +106,7 @@ export default function SlotSelector({ onSlotSelect }: SlotSelectorProps): React
           {slots.map((slot: AvailableSlot) => (
             <button
               key={slot.time}
+              type="button"
               onClick={() => handleTimeSelect(slot.time)}
               disabled={!slot.available}
               className={`p-3 rounded-xl border-2 transition-all text-sm font-medium shadow-sm ${

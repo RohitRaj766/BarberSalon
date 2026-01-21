@@ -165,10 +165,10 @@ export default function AdminDashboard(): React.ReactElement {
                     </div>
                     <div className="flex items-center gap-4 text-xs text-gray-500 mt-2">
                       <span className="flex items-center gap-1">
-                        📅 {formatDate(new Date(booking.estimatedTime))}
+                        📅 {formatDate(new Date(booking.slotTime))}
                       </span>
                       <span className="flex items-center gap-1">
-                        🕐 {formatTime(new Date(booking.estimatedTime))}
+                        🕐 {formatTime(new Date(booking.slotTime))}
                       </span>
                     </div>
                   </div>
