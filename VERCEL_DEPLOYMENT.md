@@ -39,11 +39,14 @@ NEXT_PUBLIC_OPENING_TIME=08:00
 NEXT_PUBLIC_CLOSING_TIME=20:00
 
 SLOT_DURATION_MINUTES=18
+
+TZ=Asia/Kolkata
 ```
 
 **Important Notes:**
 - `DATABASE_URL` uses the **pooler** endpoint (for serverless functions)
 - `DIRECT_URL` uses the **direct** endpoint (for migrations)
+- `TZ` sets the timezone (important for filtering past slots correctly!)
 - Change `JWT_SECRET` to a strong random string in production!
 - Change `ADMIN_PASSWORD` to a secure password!
 
