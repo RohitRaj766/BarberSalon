@@ -5,6 +5,9 @@ import { ApiResponse, DaySlots, AvailableSlot } from "@/types";
 
 export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse<DaySlots[]>>> {
   try {
+    // Get current time in UTC
+    const now = new Date();
+    
     // Use actual system dates (what's stored in DB)
     const actualToday = new Date();
     actualToday.setHours(0, 0, 0, 0);
@@ -15,6 +18,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
 
     // Debug logs
     console.log("=== SLOTS API DEBUG ===");
+    console.log("Current time (now):", now.toISOString(), "| Local:", now.toString());
     console.log("actualToday:", actualToday.toISOString(), "| Local:", actualToday.toString());
     console.log("actualTomorrow:", actualTomorrow.toISOString(), "| Local:", actualTomorrow.toString());
     console.log("=== END DEBUG ===");
@@ -22,8 +26,6 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
     // Dates to query from DB (actual dates)
     const dates = [actualToday, actualTomorrow];
     const result: DaySlots[] = [];
-    
-    const now = new Date(); // Current time for filtering past slots
 
     for (const date of dates) {
       // Format date properly in local timezone
@@ -63,33 +65,28 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       });
 
       const daySlots: AvailableSlot[] = slots
-        .map((time) => {
-          const bookedCount = slotBookingMap.get(time) || 0;
-          
-          // Check if this slot is in the past (only for today)
-          let isPast = false;
+        .filter((time) => {
+          // For today, filter out past slots completely
           if (isToday) {
             const [hours, minutes] = time.split(':').map(Number);
             const slotDateTime = new Date(date);
             slotDateTime.setHours(hours, minutes, 0, 0);
-            isPast = slotDateTime < now;
+            
+            // Add debug log
+            console.log(`Checking slot ${time}: slotDateTime=${slotDateTime.toISOString()}, now=${now.toISOString()}, isPast=${slotDateTime <= now}`);
+            
+            return slotDateTime > now; // Only show future slots (strict comparison)
           }
+          return true; // Show all slots for tomorrow
+        })
+        .map((time) => {
+          const bookedCount = slotBookingMap.get(time) || 0;
           
           return {
             time,
-            available: bookedCount === 0 && !isPast, // Slot is available only if no bookings and not in past
+            available: bookedCount === 0, // Slot is available only if no bookings
             bookedCount,
           };
-        })
-        .filter((slot) => {
-          // For today, filter out past slots completely
-          if (isToday) {
-            const [hours, minutes] = slot.time.split(':').map(Number);
-            const slotDateTime = new Date(date);
-            slotDateTime.setHours(hours, minutes, 0, 0);
-            return slotDateTime >= now; // Only show future slots
-          }
-          return true; // Show all slots for tomorrow
         });
 
       result.push({
