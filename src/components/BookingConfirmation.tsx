@@ -13,61 +13,66 @@ export default function BookingConfirmation({ booking }: BookingConfirmationProp
   const bookingDate = new Date(booking.bookingDate);
 
   return (
-    <div className="bg-green-50 border border-green-200 rounded-lg p-6 space-y-4">
-      <div className="flex items-center gap-2">
-        <div className="text-2xl">✓</div>
-        <h2 className="text-xl font-bold text-green-800">Booking Confirmed!</h2>
+    <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm border-2 border-green-400/30 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 shadow-xl animate-float">
+      <div className="flex items-center gap-2 sm:gap-3 justify-center">
+        <div className="text-4xl sm:text-5xl animate-bounce">✓</div>
+        <h2 className="text-2xl sm:text-3xl font-bold text-white">Booking Confirmed!</h2>
       </div>
 
-      <div className="space-y-3 text-sm">
-        <div>
-          <p className="text-gray-600">Booking ID</p>
-          <p className="font-mono text-gray-900">{booking.id}</p>
+      <div className="space-y-3 sm:space-y-4">
+        <div className="bg-white/10 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/20">
+          <p className="text-xs sm:text-sm text-green-200 mb-1">Booking ID</p>
+          <p className="font-mono text-white text-sm sm:text-base md:text-lg font-semibold break-all">{booking.id}</p>
         </div>
 
-        <div>
-          <p className="text-gray-600">Queue Position</p>
-          <p className="text-2xl font-bold text-blue-600">#{booking.queuePosition}</p>
+        <div className="bg-white/10 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/20">
+          <p className="text-xs sm:text-sm text-green-200 mb-1 sm:mb-2">Queue Position</p>
+          <p className="text-4xl sm:text-5xl font-bold text-white">#{booking.queuePosition}</p>
         </div>
 
-        <div>
-          <p className="text-gray-600">Date & Time</p>
-          <p className="font-semibold text-gray-900">
-            {formatDate(bookingDate)} at {formatTime(slotTime)}
-          </p>
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/20">
+            <p className="text-xs sm:text-sm text-green-200 mb-1 flex items-center gap-1">
+              <span>📅</span>
+              Date
+            </p>
+            <p className="font-semibold text-white text-xs sm:text-sm break-words">{formatDate(bookingDate)}</p>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/20">
+            <p className="text-xs sm:text-sm text-green-200 mb-1 flex items-center gap-1">
+              <span>🕐</span>
+              Time
+            </p>
+            <p className="font-semibold text-white text-xs sm:text-sm">{formatTime(slotTime)}</p>
+          </div>
         </div>
 
-        <div>
-          <p className="text-gray-600">Estimated Service Time</p>
-          <p className="font-semibold text-gray-900">
-            {formatTime(new Date(booking.estimatedTime))}
-          </p>
-        </div>
+   
 
-        <div>
-          <p className="text-gray-600">Name</p>
-          <p className="text-gray-900">{booking.name}</p>
-        </div>
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/20">
+            <p className="text-xs sm:text-sm text-green-200 mb-1 flex items-center gap-1">
+              <span>👤</span>
+              Name
+            </p>
+            <p className="text-white font-medium text-xs sm:text-sm break-words">{booking.name}</p>
+          </div>
 
-        <div>
-          <p className="text-gray-600">Phone</p>
-          <p className="text-gray-900">{booking.phone}</p>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/20">
+            <p className="text-xs sm:text-sm text-green-200 mb-1 flex items-center gap-1">
+              <span>📱</span>
+              Phone
+            </p>
+            <p className="text-white font-medium text-xs sm:text-sm break-all">{booking.phone}</p>
+          </div>
         </div>
       </div>
 
-      <div className="pt-4 border-t border-green-200 space-y-2">
-        {/* <Link
-          href="/queue"
-          className="block text-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
-        >
-          View Live Queue
-        </Link> */}
-        {/* <Link
-          href={`/status/${booking.id}`}
-          className="block text-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition"
-        >
-          Track Your Booking
-        </Link> */}
+      <div className="pt-3 sm:pt-4 border-t border-green-400/30">
+        <p className="text-center text-green-200 text-xs sm:text-sm">
+          🎉 Your slot has been successfully booked!
+        </p>
       </div>
     </div>
   );

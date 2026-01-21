@@ -42,9 +42,10 @@ export default function AdminLoginForm(): React.ReactElement {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
       <div>
-        <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="username" className="block text-xs sm:text-sm font-semibold text-white mb-2 flex items-center gap-2">
+          <span>👤</span>
           Username
         </label>
         <input
@@ -54,12 +55,13 @@ export default function AdminLoginForm(): React.ReactElement {
           onChange={(e) => setUsername(e.target.value)}
           placeholder="admin"
           required
-          className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-white/10 border-2 border-white/20 rounded-lg sm:rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 focus:bg-white/20 transition-all duration-200 backdrop-blur-sm"
         />
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="password" className="block text-xs sm:text-sm font-semibold text-white mb-2 flex items-center gap-2">
+          <span>🔑</span>
           Password
         </label>
         <input
@@ -69,18 +71,35 @@ export default function AdminLoginForm(): React.ReactElement {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"
           required
-          className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-white/10 border-2 border-white/20 rounded-lg sm:rounded-xl text-white placeholder-white/50 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 focus:bg-white/20 transition-all duration-200 backdrop-blur-sm"
         />
       </div>
 
-      {error && <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">{error}</div>}
+      {error && (
+        <div className="p-3 sm:p-4 bg-red-500/20 border border-red-500/50 backdrop-blur-sm rounded-lg sm:rounded-xl">
+          <p className="text-xs sm:text-sm text-red-200 flex items-center gap-2">
+            <span>⚠️</span>
+            <span className="break-words">{error}</span>
+          </p>
+        </div>
+      )}
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 transition"
+        className="w-full px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg sm:rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:scale-[1.02] active:scale-[0.98]"
       >
-        {loading ? "Logging in..." : "Login"}
+        {loading ? (
+          <span className="flex items-center justify-center gap-2">
+            <span className="animate-spin">⏳</span>
+            Logging in...
+          </span>
+        ) : (
+          <span className="flex items-center justify-center gap-2">
+            <span>🚀</span>
+            Login to Dashboard
+          </span>
+        )}
       </button>
     </form>
   );

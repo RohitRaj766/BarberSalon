@@ -141,8 +141,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
 
     const serialNumber = updatedCounter.value;
 
-    // Get the next queue position for this date
-    const lastBooking = await prisma.booking.findFirst({
+    // Get the next queue position for this date based on slot time order
+    // Find all bookings for this date ordered by slot time
+    const existingBookings = await prisma.booking.findMany({
       where: {
         bookingDate: {
           gte: startOfDay,
@@ -151,12 +152,39 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
         status: { in: ["PENDING", "COMPLETED"] },
       },
       orderBy: {
-        queuePosition: "desc",
+        slotTime: "asc", // Order by slot time
       },
     });
 
-    const nextQueuePosition = (lastBooking?.queuePosition || 0) + 1;
-    const estimatedTime = calculateEstimatedTime(nextQueuePosition, bookingDate);
+    // Find the correct position based on slot time
+    let queuePosition = 1;
+    for (const existingBooking of existingBookings) {
+      if (slotTime > existingBooking.slotTime) {
+        queuePosition++;
+      }
+    }
+
+    // Update queue positions for bookings that come after this slot time
+    // We need to increment their positions
+    await prisma.booking.updateMany({
+      where: {
+        bookingDate: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+        slotTime: {
+          gte: slotTime,
+        },
+        status: { in: ["PENDING", "COMPLETED"] },
+      },
+      data: {
+        queuePosition: {
+          increment: 1,
+        },
+      },
+    });
+
+    const estimatedTime = calculateEstimatedTime(queuePosition, bookingDate);
 
     // Create booking
     const booking = await prisma.booking.create({
@@ -164,7 +192,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
         serialNumber,
         name: body.name.trim(),
         phone: body.phone.trim(),
-        queuePosition: nextQueuePosition,
+        queuePosition: queuePosition,
         bookingDate: startOfDay,
         slotTime,
         estimatedTime,

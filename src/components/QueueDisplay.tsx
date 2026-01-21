@@ -48,15 +48,34 @@ export default function QueueDisplay({ bookingId }: QueueDisplayProps): React.Re
   }, [bookingId]);
 
   if (loading) {
-    return <div className="text-center py-8">Loading queue information...</div>;
+    return (
+      <div className="text-center py-12">
+        <div className="inline-block animate-spin text-5xl mb-4">⏳</div>
+        <p className="text-white font-medium">Loading queue information...</p>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="p-4 bg-red-100 text-red-700 rounded-lg">{error}</div>;
+    return (
+      <div className="p-6 bg-red-500/20 border border-red-500/50 backdrop-blur-sm rounded-2xl">
+        <p className="text-red-200 flex items-center gap-2 justify-center">
+          <span className="text-2xl">⚠️</span>
+          {error}
+        </p>
+      </div>
+    );
   }
 
   if (!booking) {
-    return <div className="p-4 bg-yellow-100 text-yellow-700 rounded-lg">Booking not found</div>;
+    return (
+      <div className="p-6 bg-yellow-500/20 border border-yellow-500/50 backdrop-blur-sm rounded-2xl">
+        <p className="text-yellow-200 flex items-center gap-2 justify-center">
+          <span className="text-2xl">⚠️</span>
+          Booking not found
+        </p>
+      </div>
+    );
   }
 
   const bookingDate = new Date(booking.bookingDate);
@@ -69,77 +88,95 @@ export default function QueueDisplay({ bookingId }: QueueDisplayProps): React.Re
   return (
     <div className="space-y-6">
       {/* Current Status */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h2 className="text-lg font-bold text-blue-900 mb-4">Your Queue Status</h2>
+      <div className="bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm border-2 border-blue-400/30 rounded-2xl p-6 shadow-lg">
+        <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+          <span>📍</span>
+          Your Queue Status
+        </h2>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-gray-600">Queue Position</p>
-            <p className="text-3xl font-bold text-blue-600">#{booking.queuePosition}</p>
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+            <p className="text-sm text-blue-200 mb-1">Queue Position</p>
+            <p className="text-4xl font-bold text-white">#{booking.queuePosition}</p>
           </div>
 
-          <div>
-            <p className="text-sm text-gray-600">People Ahead</p>
-            <p className="text-3xl font-bold text-orange-600">{peopleAhead}</p>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+            <p className="text-sm text-orange-200 mb-1">People Ahead</p>
+            <p className="text-4xl font-bold text-white">{peopleAhead}</p>
           </div>
+        </div>
 
-          <div className="col-span-2">
-            <p className="text-sm text-gray-600">Your Slot Time</p>
-            <p className="text-lg font-semibold text-gray-900">
-              {formatTime(new Date(booking.slotTime))}
+        <div className="space-y-3">
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+            <p className="text-sm text-blue-200 mb-1 flex items-center gap-1">
+              <span>🕐</span>
+              Your Slot Time
             </p>
-          </div>
-
-          <div className="col-span-2">
-            <p className="text-sm text-gray-600">Estimated Service Time</p>
-            <p className="text-lg font-semibold text-gray-900">
-              {formatTime(new Date(booking.estimatedTime))}
+            <p className="text-xl font-semibold text-white">
+              {formatTime(new Date(booking.slotTime))}
             </p>
           </div>
         </div>
 
         {booking.status === "COMPLETED" && (
-          <div className="mt-4 p-3 bg-green-100 text-green-700 rounded text-sm font-medium">
-            ✓ Your appointment has been completed
+          <div className="mt-4 p-4 bg-green-500/20 border border-green-400/50 backdrop-blur-sm rounded-xl">
+            <p className="text-green-200 font-semibold flex items-center gap-2">
+              <span className="text-xl">✓</span>
+              Your appointment has been completed
+            </p>
           </div>
         )}
 
         {booking.status === "CANCELLED" && (
-          <div className="mt-4 p-3 bg-red-100 text-red-700 rounded text-sm font-medium">
-            ✗ Your appointment has been cancelled
+          <div className="mt-4 p-4 bg-red-500/20 border border-red-400/50 backdrop-blur-sm rounded-xl">
+            <p className="text-red-200 font-semibold flex items-center gap-2">
+              <span className="text-xl">✗</span>
+              Your appointment has been cancelled
+            </p>
           </div>
         )}
       </div>
 
       {/* Queue List */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">
+      <div className="bg-white/10 backdrop-blur-sm border-2 border-white/20 rounded-2xl p-6 shadow-lg">
+        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+          <span>📋</span>
           Queue for {formatDate(bookingDate)}
         </h3>
 
-        <div className="space-y-2 max-h-96 overflow-y-auto">
+        <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
           {dateBookings.map((item) => (
             <div
               key={item.id}
-              className={`p-3 rounded-lg flex items-center justify-between ${
+              className={`p-4 rounded-xl flex items-center justify-between transition-all ${
                 item.id === bookingId
-                  ? "bg-blue-100 border border-blue-300"
-                  : "bg-gray-50 border border-gray-200"
+                  ? "bg-blue-500/30 border-2 border-blue-400/50 shadow-lg scale-105"
+                  : "bg-white/5 border border-white/10 hover:bg-white/10"
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className="font-bold text-lg w-8 text-center">#{item.queuePosition}</div>
+                <div className={`font-bold text-xl w-12 text-center px-3 py-1 rounded-lg ${
+                  item.id === bookingId
+                    ? "bg-blue-500 text-white"
+                    : "bg-white/10 text-white"
+                }`}>
+                  #{item.queuePosition}
+                </div>
                 <div>
-                  <p className="font-medium text-gray-900">{item.name}</p>
-                  <p className="text-xs text-gray-500">{formatTime(new Date(item.slotTime))}</p>
+                  <p className="font-semibold text-white">{item.name}</p>
+                  <p className="text-xs text-blue-200">{formatTime(new Date(item.slotTime))}</p>
                 </div>
               </div>
-              <div className="text-xs font-medium">
+              <div className="text-xs font-semibold">
                 {item.status === "COMPLETED" && (
-                  <span className="px-2 py-1 bg-green-100 text-green-700 rounded">Done</span>
+                  <span className="px-3 py-1.5 bg-green-500/30 border border-green-400/50 text-green-200 rounded-lg">
+                    ✓ Done
+                  </span>
                 )}
                 {item.status === "PENDING" && (
-                  <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded">Waiting</span>
+                  <span className="px-3 py-1.5 bg-yellow-500/30 border border-yellow-400/50 text-yellow-200 rounded-lg">
+                    ⏳ Waiting
+                  </span>
                 )}
               </div>
             </div>
