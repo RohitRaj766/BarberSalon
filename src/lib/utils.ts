@@ -82,3 +82,24 @@ export function isTomorrow(date: Date): boolean {
 export function isValidBookingDate(date: Date): boolean {
   return isToday(date) || isTomorrow(date);
 }
+
+/**
+ * Get current time in IST (India Standard Time)
+ * IST is UTC+5:30
+ */
+export function getCurrentTimeIST(): Date {
+  const now = new Date();
+  // Get UTC time in milliseconds
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+  // Add IST offset (5 hours 30 minutes = 19800000 milliseconds)
+  const istTime = new Date(utcTime + (19800000));
+  return istTime;
+}
+
+/**
+ * Convert a date to IST timezone
+ */
+export function toIST(date: Date): Date {
+  const utcTime = date.getTime() + (date.getTimezoneOffset() * 60000);
+  return new Date(utcTime + 19800000);
+}

@@ -1,24 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getAvailableSlots, formatDateOnly } from "@/lib/utils";
+import { getAvailableSlots, formatDateOnly, getCurrentTimeIST } from "@/lib/utils";
 import { ApiResponse, DaySlots, AvailableSlot } from "@/types";
 
 export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse<DaySlots[]>>> {
   try {
-    // Get current time in UTC
-    const now = new Date();
+    // Get current time in IST (India Standard Time)
+    const nowIST = getCurrentTimeIST();
     
-    // Use actual system dates (what's stored in DB)
-    const actualToday = new Date();
+    // Use actual system dates (what's stored in DB) - but in IST
+    const actualToday = new Date(nowIST);
     actualToday.setHours(0, 0, 0, 0);
 
-    const actualTomorrow = new Date();
+    const actualTomorrow = new Date(nowIST);
     actualTomorrow.setDate(actualToday.getDate() + 1);
     actualTomorrow.setHours(0, 0, 0, 0);
 
     // Debug logs
-    console.log("=== SLOTS API DEBUG ===");
-    console.log("Current time (now):", now.toISOString(), "| Local:", now.toString());
+    console.log("=== SLOTS API DEBUG (IST) ===");
+    console.log("Current time IST:", nowIST.toISOString(), "| Local:", nowIST.toString());
+    console.log("Current time IST (readable):", nowIST.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
     console.log("actualToday:", actualToday.toISOString(), "| Local:", actualToday.toString());
     console.log("actualTomorrow:", actualTomorrow.toISOString(), "| Local:", actualTomorrow.toString());
     console.log("=== END DEBUG ===");
@@ -72,10 +73,13 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
             const slotDateTime = new Date(date);
             slotDateTime.setHours(hours, minutes, 0, 0);
             
-            // Add debug log
-            console.log(`Checking slot ${time}: slotDateTime=${slotDateTime.toISOString()}, now=${now.toISOString()}, isPast=${slotDateTime <= now}`);
+            // Compare with IST time
+            const isPast = slotDateTime <= nowIST;
             
-            return slotDateTime > now; // Only show future slots (strict comparison)
+            // Add debug log
+            console.log(`Checking slot ${time}: slotDateTime=${slotDateTime.toISOString()}, nowIST=${nowIST.toISOString()}, isPast=${isPast}`);
+            
+            return !isPast; // Only show future slots
           }
           return true; // Show all slots for tomorrow
         })
