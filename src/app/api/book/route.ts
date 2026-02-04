@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { calculateEstimatedTime, validateName, validatePhoneNumber, getSlotNumber, getCurrentTimeIST, getTodayIST, getTomorrowIST } from "@/lib/utils";
+import { calculateEstimatedTime, validateName, validatePhoneNumber, getSlotNumber, getCurrentTimeUTC, getTodayUTC, getTomorrowUTC } from "@/lib/utils";
 import { BookingRequest, ApiResponse, BookingResponse } from "@/types";
 
 export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse<BookingResponse>>> {
@@ -22,30 +22,16 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       );
     }
 
-    // Validate booking date - parse the date string correctly
-    // The date comes as "YYYY-MM-DD" string, we need to parse it in local timezone
+    // Validate booking date - parse as UTC
     const [year, month, day] = body.bookingDate.split('-').map(Number);
-    const bookingDate = new Date(year, month - 1, day); // month is 0-indexed
-    bookingDate.setHours(0, 0, 0, 0);
+    const bookingDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
     
-    // Check if date is today or tomorrow using IST
-    const todayIST = getTodayIST();
-    const tomorrowIST = getTomorrowIST();
+    // Check if date is today or tomorrow using UTC
+    const todayUTC = getTodayUTC();
+    const tomorrowUTC = getTomorrowUTC();
     
-    const isValidDate = bookingDate.getTime() === todayIST.getTime() || 
-                        bookingDate.getTime() === tomorrowIST.getTime();
-    
-    // Debug logs
-    console.log("=== DATE VALIDATION DEBUG (IST) ===");
-    console.log("Received bookingDate string:", body.bookingDate);
-    console.log("Parsed bookingDate:", bookingDate.toISOString(), "| Local:", bookingDate.toString());
-    console.log("bookingDate timestamp:", bookingDate.getTime());
-    console.log("todayIST:", todayIST.toISOString(), "| Local:", todayIST.toString());
-    console.log("todayIST timestamp:", todayIST.getTime());
-    console.log("tomorrowIST:", tomorrowIST.toISOString(), "| Local:", tomorrowIST.toString());
-    console.log("tomorrowIST timestamp:", tomorrowIST.getTime());
-    console.log("isValidDate:", isValidDate);
-    console.log("=== END DEBUG ===");
+    const isValidDate = bookingDate.getTime() === todayUTC.getTime() || 
+                        bookingDate.getTime() === tomorrowUTC.getTime();
     
     if (!isValidDate) {
       return NextResponse.json(
@@ -54,8 +40,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       );
     }
 
-    // Validate slot time
-    const slotTime = new Date(`${body.bookingDate}T${body.slotTime}:00`);
+    // Validate slot time - parse as UTC
+    const [slotHours, slotMinutes] = body.slotTime.split(':').map(Number);
+    const slotTime = new Date(Date.UTC(year, month - 1, day, slotHours, slotMinutes, 0, 0));
+    
     if (isNaN(slotTime.getTime())) {
       return NextResponse.json(
         { success: false, error: "Invalid slot time" },
@@ -63,10 +51,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       );
     }
 
-    // Check if slot time is in the past (only for today) using IST
-    const nowIST = getCurrentTimeIST();
-    const isTodayBooking = bookingDate.getTime() === todayIST.getTime();
-    if (isTodayBooking && slotTime < nowIST) {
+    // Check if slot time is in the past (only for today) using UTC
+    const nowUTC = getCurrentTimeUTC();
+    const isTodayBooking = bookingDate.getTime() === todayUTC.getTime();
+    if (isTodayBooking && slotTime < nowUTC) {
       return NextResponse.json(
         { success: false, error: "Cannot book slots in the past" },
         { status: 400 }
@@ -75,10 +63,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
 
     // Create date range for queries
     const startOfDay = new Date(bookingDate);
-    startOfDay.setHours(0, 0, 0, 0);
     
     const endOfDay = new Date(bookingDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    endOfDay.setUTCHours(23, 59, 59, 999);
 
     // Check if slot is already booked (only one booking per slot)
     const existingSlotBooking = await prisma.booking.findFirst({
@@ -167,7 +154,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
         name: body.name.trim(),
         phone: body.phone.trim(),
         queuePosition: queuePosition,
-        bookingDate: startOfDay,
+        bookingDate: bookingDate,
         slotTime,
         estimatedTime,
         status: "PENDING",

@@ -5,25 +5,33 @@ export function calculateEstimatedTime(
   baseDate: Date = new Date()
 ): Date {
   const estimatedTime = new Date(baseDate);
-  estimatedTime.setHours(OPENING_HOUR, 0, 0, 0);
-  estimatedTime.setMinutes(estimatedTime.getMinutes() + queuePosition * SLOT_DURATION_MINUTES);
+  estimatedTime.setUTCHours(OPENING_HOUR, 0, 0, 0);
+  estimatedTime.setUTCMinutes(estimatedTime.getUTCMinutes() + queuePosition * SLOT_DURATION_MINUTES);
   return estimatedTime;
 }
 
 export function formatTime(date: Date): string {
-  return date.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+  // Extract time components directly from UTC
+  const dateStr = date.toISOString(); // "2026-02-04T14:18:00.000Z"
+  const timePart = dateStr.split('T')[1].substring(0, 5); // "14:18"
+  const [hours, minutes] = timePart.split(':').map(Number);
+  
+  // Convert to 12-hour format
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  
+  return `${String(displayHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${period}`;
 }
 
 export function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  // Extract date components directly from UTC
+  const dateStr = date.toISOString(); // "2026-02-04T14:18:00.000Z"
+  const datePart = dateStr.split('T')[0]; // "2026-02-04"
+  const [year, month, day] = datePart.split('-').map(Number);
+  
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  return `${monthNames[month - 1]} ${day}, ${year}`;
 }
 
 export function formatDateOnly(date: Date): string {
@@ -45,16 +53,16 @@ export function validateName(name: string): boolean {
 export function getAvailableSlots(date: Date): string[] {
   const slots: string[] = [];
   const current = new Date(date);
-  current.setHours(OPENING_HOUR, 0, 0, 0);
+  current.setUTCHours(OPENING_HOUR, 0, 0, 0);
 
   const endTime = new Date(date);
-  endTime.setHours(OPENING_HOUR + 12, 0, 0, 0); // 8 PM
+  endTime.setUTCHours(OPENING_HOUR + 12, 0, 0, 0); // 8 PM
 
   while (current < endTime) {
-    const hours = String(current.getHours()).padStart(2, "0");
-    const minutes = String(current.getMinutes()).padStart(2, "0");
+    const hours = String(current.getUTCHours()).padStart(2, "0");
+    const minutes = String(current.getUTCMinutes()).padStart(2, "0");
     slots.push(`${hours}:${minutes}`);
-    current.setMinutes(current.getMinutes() + SLOT_DURATION_MINUTES);
+    current.setUTCMinutes(current.getUTCMinutes() + SLOT_DURATION_MINUTES);
   }
 
   return slots;
@@ -63,19 +71,19 @@ export function getAvailableSlots(date: Date): string[] {
 export function isToday(date: Date): boolean {
   const today = new Date();
   return (
-    date.getDate() === today.getDate() &&
-    date.getMonth() === today.getMonth() &&
-    date.getFullYear() === today.getFullYear()
+    date.getUTCDate() === today.getUTCDate() &&
+    date.getUTCMonth() === today.getUTCMonth() &&
+    date.getUTCFullYear() === today.getUTCFullYear()
   );
 }
 
 export function isTomorrow(date: Date): boolean {
   const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
   return (
-    date.getDate() === tomorrow.getDate() &&
-    date.getMonth() === tomorrow.getMonth() &&
-    date.getFullYear() === tomorrow.getFullYear()
+    date.getUTCDate() === tomorrow.getUTCDate() &&
+    date.getUTCMonth() === tomorrow.getUTCMonth() &&
+    date.getUTCFullYear() === tomorrow.getUTCFullYear()
   );
 }
 
@@ -84,57 +92,28 @@ export function isValidBookingDate(date: Date): boolean {
 }
 
 /**
- * Get current time in IST (India Standard Time)
- * IST is UTC+5:30
- * Returns a Date object representing the current IST time
+ * Get current time in UTC
  */
-export function getCurrentTimeIST(): Date {
+export function getCurrentTimeUTC(): Date {
+  return new Date();
+}
+
+/**
+ * Get today's date at midnight in UTC
+ */
+export function getTodayUTC(): Date {
   const now = new Date();
-  // Get IST time string
-  const istString = now.toLocaleString('en-US', { 
-    timeZone: 'Asia/Kolkata',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  });
-  
-  // Parse: "02/04/2026, 19:30:45" format
-  const [datePart, timePart] = istString.split(', ');
-  const [month, day, year] = datePart.split('/').map(Number);
-  const [hour, minute, second] = timePart.split(':').map(Number);
-  
-  // Create date in local timezone with IST values
-  return new Date(year, month - 1, day, hour, minute, second);
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
 }
 
 /**
- * Get today's date at midnight in IST
+ * Get tomorrow's date at midnight in UTC
  */
-export function getTodayIST(): Date {
-  const now = getCurrentTimeIST();
-  // Create new date at midnight using the IST date components
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-}
-
-/**
- * Get tomorrow's date at midnight in IST
- */
-export function getTomorrowIST(): Date {
-  const today = getTodayIST();
-  // Add 1 day
-  return new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 0, 0, 0, 0);
-}
-
-/**
- * Convert a date to IST timezone
- */
-export function toIST(date: Date): Date {
-  const istString = date.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
-  return new Date(istString);
+export function getTomorrowUTC(): Date {
+  const today = getTodayUTC();
+  const tomorrow = new Date(today);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  return tomorrow;
 }
 
 /**
@@ -152,8 +131,8 @@ export function getSlotNumber(slotTime: string): number {
  * Get slot number from a Date object
  */
 export function getSlotNumberFromDate(date: Date): number {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
+  const hours = date.getUTCHours();
+  const minutes = date.getUTCMinutes();
   const totalMinutesFromOpening = (hours - OPENING_HOUR) * 60 + minutes;
   const slotNumber = Math.floor(totalMinutesFromOpening / SLOT_DURATION_MINUTES) + 1;
   return slotNumber;

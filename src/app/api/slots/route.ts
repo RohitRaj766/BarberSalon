@@ -1,48 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getAvailableSlots, formatDateOnly, getCurrentTimeIST } from "@/lib/utils";
+import { getAvailableSlots, formatDateOnly, getCurrentTimeUTC } from "@/lib/utils";
 import { ApiResponse, DaySlots, AvailableSlot } from "@/types";
 
 export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse<DaySlots[]>>> {
   try {
-    // Get current time in IST (India Standard Time)
-    const nowIST = getCurrentTimeIST();
+    // Get current time in UTC
+    const nowUTC = getCurrentTimeUTC();
     
-    // Use actual system dates (what's stored in DB) - but in IST
-    const actualToday = new Date(nowIST);
-    actualToday.setHours(0, 0, 0, 0);
+    // Use actual system dates in UTC
+    const actualToday = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth(), nowUTC.getUTCDate()));
+    const actualTomorrow = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth(), nowUTC.getUTCDate() + 1));
 
-    const actualTomorrow = new Date(nowIST);
-    actualTomorrow.setDate(actualToday.getDate() + 1);
-    actualTomorrow.setHours(0, 0, 0, 0);
-
-    // Debug logs
-    console.log("=== SLOTS API DEBUG (IST) ===");
-    console.log("Current time IST:", nowIST.toISOString(), "| Local:", nowIST.toString());
-    console.log("Current time IST (readable):", nowIST.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
-    console.log("actualToday:", actualToday.toISOString(), "| Local:", actualToday.toString());
-    console.log("actualTomorrow:", actualTomorrow.toISOString(), "| Local:", actualTomorrow.toString());
-    console.log("=== END DEBUG ===");
-
-    // Dates to query from DB (actual dates)
+    // Dates to query from DB
     const dates = [actualToday, actualTomorrow];
     const result: DaySlots[] = [];
 
     for (const date of dates) {
-      // Format date properly in local timezone
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const dateStr = `${year}-${month}-${day}`;
-      
+      const dateStr = formatDateOnly(date);
       const slots = getAvailableSlots(date);
 
       // Create date range for query
       const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
-      
       const endOfDay = new Date(date);
-      endOfDay.setHours(23, 59, 59, 999);
+      endOfDay.setUTCHours(23, 59, 59, 999);
       
       const isToday = date.getTime() === actualToday.getTime();
 
@@ -59,36 +40,28 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
 
       const slotBookingMap = new Map<string, number>();
       bookings.forEach((booking: { slotTime: Date }) => {
-        const hours = String(booking.slotTime.getHours()).padStart(2, "0");
-        const minutes = String(booking.slotTime.getMinutes()).padStart(2, "0");
+        const hours = String(booking.slotTime.getUTCHours()).padStart(2, "0");
+        const minutes = String(booking.slotTime.getUTCMinutes()).padStart(2, "0");
         const timeStr = `${hours}:${minutes}`;
         slotBookingMap.set(timeStr, (slotBookingMap.get(timeStr) || 0) + 1);
       });
 
       const daySlots: AvailableSlot[] = slots
         .filter((time) => {
-          // For today, filter out past slots completely
+          // For today, filter out past slots
           if (isToday) {
             const [hours, minutes] = time.split(':').map(Number);
-            const slotDateTime = new Date(date);
-            slotDateTime.setHours(hours, minutes, 0, 0);
-            
-            // Compare with IST time
-            const isPast = slotDateTime <= nowIST;
-            
-            // Add debug log
-            console.log(`Checking slot ${time}: slotDateTime=${slotDateTime.toISOString()}, nowIST=${nowIST.toISOString()}, isPast=${isPast}`);
-            
-            return !isPast; // Only show future slots
+            const slotDateTime = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), hours, minutes));
+            return slotDateTime > nowUTC;
           }
-          return true; // Show all slots for tomorrow
+          return true;
         })
         .map((time) => {
           const bookedCount = slotBookingMap.get(time) || 0;
           
           return {
             time,
-            available: bookedCount === 0, // Slot is available only if no bookings
+            available: bookedCount === 0,
             bookedCount,
           };
         });
