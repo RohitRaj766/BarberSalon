@@ -14,7 +14,7 @@ export default function AdminDashboard(): React.ReactElement {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const router = useRouter();
 
   const fetchBookings = async (): Promise<void> => {
@@ -47,7 +47,7 @@ export default function AdminDashboard(): React.ReactElement {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, itemsPerPage]);
 
   const handleMarkComplete = async (id: string, name: string): Promise<void> => {
     // Show confirmation dialog
@@ -212,6 +212,17 @@ export default function AdminDashboard(): React.ReactElement {
             <option value="PENDING" className="bg-gray-800">Pending</option>
             <option value="COMPLETED" className="bg-gray-800">Completed</option>
           </select>
+
+          {/* Rows per page */}
+          <select
+            value={itemsPerPage}
+            onChange={(e) => setItemsPerPage(Number(e.target.value))}
+            className="px-4 py-2.5 bg-white/10 border-2 border-white/20 rounded-xl text-white focus:outline-none focus:border-purple-400 transition-all cursor-pointer"
+          >
+            <option value={5} className="bg-gray-800">5 rows</option>
+            <option value={10} className="bg-gray-800">10 rows</option>
+            <option value={50} className="bg-gray-800">50 rows</option>
+          </select>
         </div>
 
         {/* Results count */}
@@ -237,20 +248,20 @@ export default function AdminDashboard(): React.ReactElement {
           </div>
         ) : (
           <>
-            {/* Desktop Table View */}
-            <div className="hidden lg:block overflow-hidden rounded-xl border-2 border-white/20">
+            {/* Table View (All Devices) */}
+            <div className="overflow-hidden rounded-xl border-2 border-white/20">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-white/10">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-purple-200">Slot #</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-purple-200">Booking #</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-purple-200">Name</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-purple-200">Phone</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-purple-200">Date</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-purple-200">Time</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-purple-200">Status</th>
-                      <th className="px-4 py-3 text-center text-sm font-semibold text-purple-200">Actions</th>
+                      <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200">Slot #</th>
+                      <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200">Book #</th>
+                      <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200">Name</th>
+                      <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200">Phone</th>
+                      <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200 hidden md:table-cell">Date</th>
+                      <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200">Time</th>
+                      <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200">Status</th>
+                      <th className="px-2 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-purple-200">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/10">
@@ -265,8 +276,8 @@ export default function AdminDashboard(): React.ReactElement {
                             isCompleted ? "opacity-70" : ""
                           }`}
                         >
-                          <td className="px-4 py-4">
-                            <div className={`inline-flex items-center justify-center px-3 py-1.5 rounded-lg font-bold text-base shadow-md ${
+                          <td className="px-2 sm:px-4 py-3 sm:py-4">
+                            <div className={`inline-flex items-center justify-center px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg font-bold text-sm sm:text-base shadow-md ${
                               isCompleted
                                 ? "bg-gray-600 text-white"
                                 : "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
@@ -274,52 +285,61 @@ export default function AdminDashboard(): React.ReactElement {
                               #{booking.queuePosition}
                             </div>
                           </td>
-                          <td className="px-4 py-4">
-                            <span className="text-white font-medium">#{booking.serialNumber}</span>
+                          <td className="px-2 sm:px-4 py-3 sm:py-4">
+                            <span className="text-white font-medium text-xs sm:text-base">#{booking.serialNumber}</span>
                           </td>
-                          <td className="px-4 py-4">
-                            <span className="text-white font-semibold">{booking.name}</span>
+                          <td className="px-2 sm:px-4 py-3 sm:py-4">
+                            <span className="text-white font-semibold text-xs sm:text-base">{booking.name}</span>
                           </td>
-                          <td className="px-4 py-4">
-                            <span className="text-purple-200">{booking.phone}</span>
+                          <td className="px-2 sm:px-4 py-3 sm:py-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-purple-200 text-xs sm:text-sm">{booking.phone}</span>
+                              <a
+                                href={`tel:${booking.phone}`}
+                                className="inline-flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg transform hover:scale-110 active:scale-95"
+                                title={`Call ${booking.name}`}
+                              >
+                                📞
+                              </a>
+                            </div>
                           </td>
-                          <td className="px-4 py-4">
-                            <span className="text-purple-200 text-sm">{formatDate(new Date(booking.slotTime))}</span>
+                          <td className="px-2 sm:px-4 py-3 sm:py-4 hidden md:table-cell">
+                            <span className="text-purple-200 text-xs">{formatDate(new Date(booking.slotTime))}</span>
                           </td>
-                          <td className="px-4 py-4">
-                            <span className="text-purple-200">{formatTime(new Date(booking.slotTime))}</span>
+                          <td className="px-2 sm:px-4 py-3 sm:py-4">
+                            <span className="text-purple-200 text-xs sm:text-sm">{formatTime(new Date(booking.slotTime))}</span>
                           </td>
-                          <td className="px-4 py-4">
+                          <td className="px-2 sm:px-4 py-3 sm:py-4">
                             {isCompleted ? (
-                              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600/80 text-white rounded-lg font-semibold text-sm">
-                                ✓ Completed
+                              <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-green-600/80 text-white rounded-lg font-semibold text-xs whitespace-nowrap">
+                                ✓ <span className="hidden sm:inline">Done</span>
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500/30 border border-blue-400/50 text-blue-100 rounded-lg font-semibold text-sm">
-                                ⏳ Pending
+                              <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-500/30 border border-blue-400/50 text-blue-100 rounded-lg font-semibold text-xs whitespace-nowrap">
+                                ⏳ <span className="hidden sm:inline">Wait</span>
                               </span>
                             )}
                           </td>
-                          <td className="px-4 py-4">
-                            <div className="flex items-center justify-center gap-2">
+                          <td className="px-2 sm:px-4 py-3 sm:py-4">
+                            <div className="flex items-center justify-center gap-1 sm:gap-2">
                               {isPending && (
                                 <button
                                   onClick={() => handleMarkComplete(booking.id, booking.name)}
                                   disabled={completeLoading === booking.id || deleteLoading === booking.id}
-                                  className="px-3 py-1.5 text-xs bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-green-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
+                                  className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-green-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
                                   title="Mark as completed"
                                 >
                                   {completeLoading === booking.id ? (
                                     <span className="animate-spin">⏳</span>
                                   ) : (
-                                    "✓ Done"
+                                    <>✓<span className="hidden sm:inline ml-1">Done</span></>
                                   )}
                                 </button>
                               )}
                               <button
                                 onClick={() => handleDelete(booking.id, booking.name)}
                                 disabled={completeLoading === booking.id || deleteLoading === booking.id}
-                                className="px-3 py-1.5 text-xs bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:from-red-600 hover:to-red-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
+                                className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:from-red-600 hover:to-red-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
                                 title="Delete booking"
                               >
                                 {deleteLoading === booking.id ? (
@@ -338,118 +358,74 @@ export default function AdminDashboard(): React.ReactElement {
               </div>
             </div>
 
-            {/* Mobile/Tablet Card View */}
-            <div className="lg:hidden space-y-2 sm:space-y-3">
-              {paginatedBookings.map((booking) => {
-                const isPending = booking.status === "PENDING";
-                const isCompleted = booking.status === "COMPLETED";
-
-                return (
-                  <div
-                    key={booking.id}
-                    className={`p-3 sm:p-4 md:p-5 bg-white/10 backdrop-blur-sm border-2 border-white/20 rounded-xl sm:rounded-2xl hover:border-purple-400/50 transition-all shadow-md hover:shadow-xl ${
-                      isCompleted ? "opacity-70" : ""
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2 sm:gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3 flex-wrap">
-                          <div className={`px-2.5 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-lg sm:rounded-xl font-bold text-base sm:text-lg md:text-xl shadow-lg flex-shrink-0 ${
-                            isCompleted
-                              ? "bg-gray-600 text-white"
-                              : "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
-                          }`}>
-                            #{booking.queuePosition}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-bold text-white text-sm sm:text-base md:text-lg truncate">{booking.name}</p>
-                            <p className="text-xs sm:text-sm text-purple-200 flex items-center gap-1 truncate">
-                              <span>📱</span>
-                              {booking.phone}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-purple-200 flex-wrap">
-                          <span className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-lg">
-                            <span>🎫</span>
-                            <span className="whitespace-nowrap">Booking #{booking.serialNumber}</span>
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <span>📅</span>
-                            <span className="whitespace-nowrap">{formatDate(new Date(booking.slotTime))}</span>
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <span>🕐</span>
-                            <span className="whitespace-nowrap">{formatTime(new Date(booking.slotTime))}</span>
-                          </span>
-                          <span className={`flex items-center gap-1 px-2 py-1 rounded-lg font-semibold ${
-                            isCompleted
-                              ? "bg-green-600/80 text-white"
-                              : "bg-blue-500/30 border border-blue-400/50 text-blue-100"
-                          }`}>
-                            {isCompleted ? "✓ Completed" : "⏳ Pending"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-1.5 sm:gap-2 flex-shrink-0">
-                        {isPending && (
-                          <button
-                            onClick={() => handleMarkComplete(booking.id, booking.name)}
-                            disabled={completeLoading === booking.id || deleteLoading === booking.id}
-                            className="px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 text-xs sm:text-sm bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg sm:rounded-xl font-semibold hover:from-green-600 hover:to-green-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 whitespace-nowrap"
-                          >
-                            {completeLoading === booking.id ? (
-                              <span className="flex items-center justify-center gap-1">
-                                <span className="animate-spin">⏳</span>
-                                <span className="hidden sm:inline">...</span>
-                              </span>
-                            ) : (
-                              <>
-                                <span>✓</span>
-                                <span className="hidden sm:inline ml-1">Done</span>
-                              </>
-                            )}
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDelete(booking.id, booking.name)}
-                          disabled={completeLoading === booking.id || deleteLoading === booking.id}
-                          className="px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 text-xs sm:text-sm bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg sm:rounded-xl font-semibold hover:from-red-600 hover:to-red-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
-                        >
-                          {deleteLoading === booking.id ? (
-                            <span className="animate-spin">⏳</span>
-                          ) : (
-                            "🗑️"
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-4">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 bg-white/10 border-2 border-white/20 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
-                >
-                  ← Prev
-                </button>
-                <span className="text-white font-medium px-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                <div className="text-sm text-purple-200">
                   Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 bg-white/10 border-2 border-white/20 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
-                >
-                  Next →
-                </button>
+                </div>
+                
+                <div className="flex items-center gap-2 flex-wrap justify-center">
+                  <button
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 bg-white/10 border-2 border-white/20 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all text-sm"
+                  >
+                    First
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 bg-white/10 border-2 border-white/20 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all text-sm"
+                  >
+                    ← Prev
+                  </button>
+                  
+                  {/* Page numbers */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`px-3 py-2 rounded-lg font-semibold transition-all text-sm ${
+                            currentPage === pageNum
+                              ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                              : "bg-white/10 border-2 border-white/20 text-white hover:bg-white/20"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 bg-white/10 border-2 border-white/20 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all text-sm"
+                  >
+                    Next →
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 bg-white/10 border-2 border-white/20 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all text-sm"
+                  >
+                    Last
+                  </button>
+                </div>
               </div>
             )}
           </>
