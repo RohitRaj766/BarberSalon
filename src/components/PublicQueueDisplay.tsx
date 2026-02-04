@@ -13,41 +13,43 @@ export default function PublicQueueDisplay(): React.ReactElement {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  useEffect(() => {
-    const fetchQueue = async (): Promise<void> => {
-      try {
-        const response = await fetch("/api/queue");
-        const data = await response.json();
+  const fetchQueue = async (): Promise<void> => {
+    setRefreshing(true);
+    try {
+      const response = await fetch("/api/queue");
+      const data = await response.json();
 
-        if (!response.ok) {
-          setError("Failed to load queue");
-          return;
-        }
+      if (!response.ok) {
+        setError("Failed to load queue");
+        return;
+      }
 
-        setBookings(data.data.bookings);
-        
-        // Set initial selected date to today in UTC
+      setBookings(data.data.bookings);
+      
+      // Set initial selected date to today in UTC (only if not set)
+      if (!selectedDate) {
         const now = new Date();
         const year = now.getUTCFullYear();
         const month = String(now.getUTCMonth() + 1).padStart(2, '0');
         const day = String(now.getUTCDate()).padStart(2, '0');
         const todayStr = `${year}-${month}-${day}`;
-        
         setSelectedDate(todayStr);
-      } catch (err) {
-        setError("Failed to load queue");
-        console.error(err);
-      } finally {
-        setLoading(false);
       }
-    };
+      
+      setError("");
+    } catch (err) {
+      setError("Failed to load queue");
+      console.error(err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
+  useEffect(() => {
     fetchQueue();
-
-    // Poll for updates every 5 seconds
-    const interval = setInterval(fetchQueue, 5000);
-    return () => clearInterval(interval);
   }, []);
 
   // Reset to page 1 when filters change
@@ -158,6 +160,31 @@ export default function PublicQueueDisplay(): React.ReactElement {
 
   return (
     <div className="space-y-6">
+      {/* Header with Refresh Button */}
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-2xl sm:text-3xl font-bold text-white">Live Queue</h2>
+        <button
+          onClick={fetchQueue}
+          disabled={refreshing}
+          className="text-white hover:scale-110 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Refresh queue"
+        >
+          <svg 
+            className={`w-6 h-6 ${refreshing ? "animate-spin" : ""}`}
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2} 
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
+            />
+          </svg>
+        </button>
+      </div>
+
       {/* Date Tabs */}
       {validDates.length > 0 && (
         <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-1 px-1">

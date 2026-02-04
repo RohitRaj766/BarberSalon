@@ -1,157 +1,160 @@
-# Barber Shop Scheduling App
+# Barber Shop Queue Management System
 
-A mobile-first barber shop appointment scheduling web application built with Next.js, TypeScript, and PostgreSQL (Neon).
+A modern, real-time queue management system for barber shops built with Next.js, TypeScript, and PostgreSQL.
 
-## Features
+## 🎯 Features
 
 ### Customer Features
-- Book haircut appointments without authentication
-- View queue position and estimated wait time
-- Real-time queue updates
-- Simple, mobile-friendly booking form
+- **Easy Booking**: Book appointments without authentication
+- **Dual Numbering**: Booking number (daily sequential) + Slot number (time-based)
+- **Live Queue Display**: Real-time queue with table view and filters
+- **Search & Filter**: Search by name, booking/slot number, filter by status
+- **Pagination**: Adjustable rows per page (5/10/50)
+- **Manual Refresh**: On-demand data refresh (no auto-polling)
+- **Mobile Responsive**: Optimized table view for all screen sizes
 
 ### Admin Features
-- Secure login with username/password
-- View all scheduled appointments
-- Mark appointments as completed
-- Delete or cancel bookings
-- Real-time queue management
-- Live queue position updates
+- **Secure Dashboard**: JWT-based authentication
+- **Complete Management**: Mark complete, delete bookings
+- **Quick Actions**: One-click call button for each customer
+- **Advanced Filters**: Search, status filter, pagination
+- **Real-time Stats**: Pending and completed counts
+- **Manual Refresh**: Control when to fetch new data
 
-## Tech Stack
+### Technical Features
+- **UTC Timezone**: All operations in UTC for consistency
+- **Daily Reset**: Booking numbers reset at midnight UTC
+- **Time Slots**: 18-minute slots from 08:00 to 20:00 (40 slots/day)
+- **2-Day Window**: Book for today or tomorrow only
+- **Modern UI**: Glassmorphism design with gradients and animations
 
-- **Framework**: Next.js 16 (App Router)
+## 🛠️ Tech Stack
+
+- **Framework**: Next.js 16 (App Router, Turbopack)
 - **Language**: TypeScript (strict mode)
-- **Styling**: Tailwind CSS (mobile-first)
 - **Database**: PostgreSQL (Neon)
 - **ORM**: Prisma
-- **Authentication**: JWT-based admin auth
-- **State Management**: React Hooks
+- **Styling**: Tailwind CSS 4
+- **Auth**: JWT with HTTP-only cookies
+- **Deployment**: Vercel-ready
 
-## Setup Instructions
+## 📦 Installation
 
-### Prerequisites
-- Node.js 18+
-- PostgreSQL database (Neon recommended)
-
-### Installation
-
-1. Clone the repository and install dependencies:
+1. **Clone and install dependencies**
 ```bash
+git clone <repository-url>
 cd barber-shop
 npm install
 ```
 
-2. Set up environment variables in `.env`:
+2. **Set up environment variables**
+Create `.env` file:
 ```env
-DATABASE_URL="your-neon-postgresql-url"
+DATABASE_URL="your-postgresql-url"
 ADMIN_USERNAME="admin"
-ADMIN_PASSWORD="admin123"
-JWT_SECRET="your-secret-key-change-in-production"
+ADMIN_PASSWORD="your-secure-password"
+JWT_SECRET="your-secret-key"
 ```
 
-3. Push the database schema:
+3. **Initialize database**
 ```bash
 npx prisma db push
 ```
 
-4. Run the development server:
+4. **Run development server**
 ```bash
 npm run dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
+Visit [http://localhost:3000](http://localhost:3000)
 
-## Project Structure
+## 🚀 Deployment
 
-```
-barber-shop/
-├── src/
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── admin/
-│   │   │   │   ├── login/route.ts
-│   │   │   │   └── logout/route.ts
-│   │   │   ├── book/route.ts
-│   │   │   ├── booking/[id]/route.ts
-│   │   │   └── queue/route.ts
-│   │   ├── admin/
-│   │   │   ├── login/page.tsx
-│   │   │   └── dashboard/page.tsx
-│   │   ├── status/[id]/page.tsx
-│   │   ├── layout.tsx
-│   │   └── page.tsx
-│   ├── components/
-│   │   ├── AdminDashboard.tsx
-│   │   ├── AdminLoginForm.tsx
-│   │   ├── BookingConfirmation.tsx
-│   │   ├── BookingForm.tsx
-│   │   └── QueueDisplay.tsx
-│   ├── lib/
-│   │   ├── auth.ts
-│   │   ├── constants.ts
-│   │   ├── db.ts
-│   │   └── utils.ts
-│   └── types/
-│       └── index.ts
-├── prisma/
-│   └── schema.prisma
-└── public/
-```
-
-## API Routes
-
-### Public Routes
-- `POST /api/book` - Create a new booking
-- `GET /api/queue` - Get all bookings in queue
-- `GET /api/booking/[id]` - Get specific booking details
-
-### Admin Routes
-- `POST /api/admin/login` - Admin login
-- `POST /api/admin/logout` - Admin logout
-- `PATCH /api/booking/[id]` - Update booking status
-- `DELETE /api/booking/[id]` - Delete booking
-
-## Scheduling Logic
-
-- Each appointment slot is **18 minutes**
-- Bookings are sequential (queue-based)
-- Estimated time = Opening time (9 AM) + (Queue Position × 18 minutes)
-- When a booking is completed/deleted, queue positions are automatically recalculated
-
-## Type Safety
-
-All code is strictly typed with TypeScript. No `any` types are used anywhere in the codebase:
-- API responses are fully typed
-- Database models are strongly typed
-- Component props have explicit types
-- All functions have return type annotations
-
-## Deployment
-
-The app is ready for deployment on Vercel:
+### Vercel Deployment
 
 1. Push code to GitHub
-2. Connect repository to Vercel
-3. Set environment variables in Vercel dashboard
+2. Import project in Vercel
+3. Add environment variables in Vercel dashboard
 4. Deploy
 
-## Default Credentials
+The app is production-ready with:
+- Prisma generation in build script
+- Binary targets for Vercel
+- Optimized static and dynamic rendering
 
-For development:
-- **Username**: admin
-- **Password**: admin123
+## 📊 Database Schema
 
-Change these in production via environment variables.
+### Booking
+- Dual numbering: `serialNumber` (daily) + `queuePosition` (slot-based)
+- UTC timestamps for all dates
+- Status: PENDING, COMPLETED, CANCELLED
+- Indexed fields for fast queries
 
-## Mobile-First Design
+### Counter
+- Date-based format: `booking_counter_YYYYMMDD`
+- Auto-increments per day
+- Resets at midnight UTC
 
-The app is optimized for mobile devices with:
-- Responsive Tailwind CSS layout
-- Touch-friendly buttons and inputs
-- Minimal UI with no unnecessary animations
-- Fast loading times
+## 🎨 UI/UX Highlights
 
-## License
+- **Glassmorphism**: Modern blur effects and gradients
+- **Responsive Tables**: Works on all screen sizes
+- **Smart Pagination**: First/Prev/Page Numbers/Next/Last
+- **Visual Feedback**: Loading states, hover effects, animations
+- **Accessibility**: Semantic HTML, clear hierarchy
+
+## 📱 Pages
+
+- `/` - Customer booking form
+- `/queue` - Public queue display
+- `/status/[id]` - Booking status tracking
+- `/admin/login` - Admin authentication
+- `/admin/dashboard` - Admin management panel
+
+## 🔐 Default Credentials
+
+**Development only:**
+- Username: `admin`
+- Password: Set in `.env`
+
+**Change these in production!**
+
+## 📝 API Routes
+
+### Public
+- `POST /api/book` - Create booking
+- `GET /api/queue` - Get queue
+- `GET /api/slots` - Get available slots
+- `GET /api/booking/[id]` - Get booking details
+
+### Admin
+- `POST /api/admin/login` - Login
+- `POST /api/admin/logout` - Logout
+- `PATCH /api/booking/[id]` - Update status
+- `DELETE /api/booking/[id]` - Delete booking
+
+## 🎯 Key Concepts
+
+### Booking Numbers
+- **Booking #**: Sequential per day (1, 2, 3... resets daily)
+- **Slot #**: Based on time (Slot 1 = 08:00, Slot 34 = 18:00)
+
+### Time Management
+- All operations in UTC
+- 18-minute slots
+- 40 slots per day (08:00 - 20:00)
+- 2-day booking window
+
+### Queue Display
+- Shows today and tomorrow only
+- Filters: Search, status, rows per page
+- Manual refresh (no auto-polling)
+- Table view on all devices
+
+## 📄 License
 
 MIT
+
+---
+
+Built with ❤️ for modern barber shops
