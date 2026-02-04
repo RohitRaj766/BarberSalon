@@ -4,6 +4,22 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BookingResponse } from "@/types";
 import { formatTime, formatDate } from "@/lib/utils";
+import Toast from "./Toast";
+import ConfirmModal from "./ConfirmModal";
+
+interface ToastState {
+  show: boolean;
+  message: string;
+  type: "success" | "error" | "info";
+}
+
+interface ConfirmState {
+  show: boolean;
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  type: "danger" | "warning" | "info";
+}
 
 export default function AdminDashboard(): React.ReactElement {
   const [bookings, setBookings] = useState<BookingResponse[]>([]);
@@ -16,7 +32,28 @@ export default function AdminDashboard(): React.ReactElement {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [toast, setToast] = useState<ToastState>({ show: false, message: "", type: "info" });
+  const [confirm, setConfirm] = useState<ConfirmState>({
+    show: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+    type: "warning",
+  });
   const router = useRouter();
+
+  const showToast = (message: string, type: "success" | "error" | "info") => {
+    setToast({ show: true, message, type });
+  };
+
+  const showConfirm = (
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    type: "danger" | "warning" | "info" = "warning"
+  ) => {
+    setConfirm({ show: true, title, message, onConfirm, type });
+  };
 
   const fetchBookings = async (): Promise<void> => {
     setRefreshing(true);
@@ -50,53 +87,63 @@ export default function AdminDashboard(): React.ReactElement {
   }, [searchQuery, statusFilter, itemsPerPage]);
 
   const handleMarkComplete = async (id: string, name: string): Promise<void> => {
-    // Show confirmation dialog
-    const confirmed = window.confirm(
-      `Mark "${name}" as completed?\n\nThis will move the booking to the completed list.`
+    showConfirm(
+      "Mark as Completed",
+      `Mark "${name}" as completed? This will move the booking to the completed list.`,
+      async () => {
+        setConfirm({ ...confirm, show: false });
+        setCompleteLoading(id);
+        try {
+          const response = await fetch(`/api/booking/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "COMPLETED" }),
+          });
+
+          if (response.ok) {
+            await fetchBookings();
+            showToast(`${name} marked as completed!`, "success");
+          } else {
+            showToast("Failed to update booking", "error");
+          }
+        } catch (err) {
+          console.error(err);
+          showToast("An error occurred", "error");
+        } finally {
+          setCompleteLoading("");
+        }
+      },
+      "info"
     );
-    
-    if (!confirmed) return;
-
-    setCompleteLoading(id);
-    try {
-      const response = await fetch(`/api/booking/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "COMPLETED" }),
-      });
-
-      if (response.ok) {
-        await fetchBookings();
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setCompleteLoading("");
-    }
   };
 
   const handleDelete = async (id: string, name: string): Promise<void> => {
-    // Show confirmation dialog
-    const confirmed = window.confirm(
-      `Delete booking for "${name}"?\n\nThis action cannot be undone!`
+    showConfirm(
+      "Delete Booking",
+      `Delete booking for "${name}"? This action cannot be undone!`,
+      async () => {
+        setConfirm({ ...confirm, show: false });
+        setDeleteLoading(id);
+        try {
+          const response = await fetch(`/api/booking/${id}`, {
+            method: "DELETE",
+          });
+
+          if (response.ok) {
+            await fetchBookings();
+            showToast(`Booking for ${name} deleted`, "success");
+          } else {
+            showToast("Failed to delete booking", "error");
+          }
+        } catch (err) {
+          console.error(err);
+          showToast("An error occurred", "error");
+        } finally {
+          setDeleteLoading("");
+        }
+      },
+      "danger"
     );
-    
-    if (!confirmed) return;
-
-    setDeleteLoading(id);
-    try {
-      const response = await fetch(`/api/booking/${id}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        await fetchBookings();
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setDeleteLoading("");
-    }
   };
 
   const handleLogout = async (): Promise<void> => {
@@ -142,6 +189,27 @@ export default function AdminDashboard(): React.ReactElement {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Toast Notification */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
+        />
+      )}
+
+      {/* Confirm Modal */}
+      {confirm.show && (
+        <ConfirmModal
+          title={confirm.title}
+          message={confirm.message}
+          onConfirm={confirm.onConfirm}
+          onCancel={() => setConfirm({ ...confirm, show: false })}
+          type={confirm.type}
+          confirmText={confirm.type === "danger" ? "Delete" : "Confirm"}
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3 sm:gap-4">
         <div className="min-w-0 flex-1">
