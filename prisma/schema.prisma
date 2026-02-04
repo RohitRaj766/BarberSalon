@@ -10,7 +10,7 @@ datasource db {
 
 model Booking {
   id            String   @id @default(cuid())
-  serialNumber  Int      @unique
+  serialNumber  Int      
   name          String
   phone         String
   queuePosition Int
@@ -37,7 +37,7 @@ model Admin {
 }
 
 model Counter {
-  id    String @id @default("booking_counter")
+  id    String @id // Format: "booking_counter_YYYYMMDD" for date-based counters
   value Int    @default(0)
 }
 

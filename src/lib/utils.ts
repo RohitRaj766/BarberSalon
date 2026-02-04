@@ -86,20 +86,75 @@ export function isValidBookingDate(date: Date): boolean {
 /**
  * Get current time in IST (India Standard Time)
  * IST is UTC+5:30
+ * Returns a Date object representing the current IST time
  */
 export function getCurrentTimeIST(): Date {
   const now = new Date();
-  // Get UTC time in milliseconds
-  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-  // Add IST offset (5 hours 30 minutes = 19800000 milliseconds)
-  const istTime = new Date(utcTime + (19800000));
-  return istTime;
+  // Get IST time string
+  const istString = now.toLocaleString('en-US', { 
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  
+  // Parse: "02/04/2026, 19:30:45" format
+  const [datePart, timePart] = istString.split(', ');
+  const [month, day, year] = datePart.split('/').map(Number);
+  const [hour, minute, second] = timePart.split(':').map(Number);
+  
+  // Create date in local timezone with IST values
+  return new Date(year, month - 1, day, hour, minute, second);
+}
+
+/**
+ * Get today's date at midnight in IST
+ */
+export function getTodayIST(): Date {
+  const now = getCurrentTimeIST();
+  // Create new date at midnight using the IST date components
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+}
+
+/**
+ * Get tomorrow's date at midnight in IST
+ */
+export function getTomorrowIST(): Date {
+  const today = getTodayIST();
+  // Add 1 day
+  return new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 0, 0, 0, 0);
 }
 
 /**
  * Convert a date to IST timezone
  */
 export function toIST(date: Date): Date {
-  const utcTime = date.getTime() + (date.getTimezoneOffset() * 60000);
-  return new Date(utcTime + 19800000);
+  const istString = date.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+  return new Date(istString);
+}
+
+/**
+ * Calculate slot number based on time
+ * Slot 1 = 08:00, Slot 2 = 08:18, Slot 3 = 08:36, etc.
+ */
+export function getSlotNumber(slotTime: string): number {
+  const [hours, minutes] = slotTime.split(':').map(Number);
+  const totalMinutesFromOpening = (hours - OPENING_HOUR) * 60 + minutes;
+  const slotNumber = Math.floor(totalMinutesFromOpening / SLOT_DURATION_MINUTES) + 1;
+  return slotNumber;
+}
+
+/**
+ * Get slot number from a Date object
+ */
+export function getSlotNumberFromDate(date: Date): number {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const totalMinutesFromOpening = (hours - OPENING_HOUR) * 60 + minutes;
+  const slotNumber = Math.floor(totalMinutesFromOpening / SLOT_DURATION_MINUTES) + 1;
+  return slotNumber;
 }

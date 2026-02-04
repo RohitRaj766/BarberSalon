@@ -9,6 +9,10 @@ export default function PublicQueueDisplay(): React.ReactElement {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const fetchQueue = async (): Promise<void> => {
@@ -23,14 +27,16 @@ export default function PublicQueueDisplay(): React.ReactElement {
 
         setBookings(data.data.bookings);
         
-        // Set initial selected date to today (adjusted +1 day to match user expectation)
-        if (data.data.bookings.length > 0) {
-          setSelectedDate(formatDateOnly(new Date(data.data.bookings[0].bookingDate)));
-        } else {
-          // Use actual system date (which is what's stored in DB)
-          const actualToday = new Date();
-          setSelectedDate(formatDateOnly(actualToday));
-        }
+        // Always set initial selected date to today in IST
+        const now = new Date();
+        const istString = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+        const istDate = new Date(istString);
+        const year = istDate.getFullYear();
+        const month = String(istDate.getMonth() + 1).padStart(2, '0');
+        const day = String(istDate.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+        
+        setSelectedDate(todayStr);
       } catch (err) {
         setError("Failed to load queue");
         console.error(err);
@@ -45,6 +51,11 @@ export default function PublicQueueDisplay(): React.ReactElement {
     const interval = setInterval(fetchQueue, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, selectedDate]);
 
   if (loading) {
     return (
@@ -66,39 +77,120 @@ export default function PublicQueueDisplay(): React.ReactElement {
     );
   }
 
-  // Get unique dates
-  const uniqueDates = Array.from(
-    new Set(bookings.map((b) => formatDateOnly(new Date(b.bookingDate))))
-  ).sort();
+  // Get actual dates in IST (client-side safe)
+  const now = new Date();
+  const istString = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+  const istDate = new Date(istString);
+  
+  // Create today and tomorrow at midnight IST using Date constructor
+  const todayIST = new Date(istDate.getFullYear(), istDate.getMonth(), istDate.getDate());
+  const tomorrowIST = new Date(istDate.getFullYear(), istDate.getMonth(), istDate.getDate() + 1);
+  
+  // Get timestamps for comparison
+  const todayTimestamp = todayIST.getTime();
+  const tomorrowTimestamp = tomorrowIST.getTime();
+  const dayAfterTimestamp = new Date(tomorrowIST.getFullYear(), tomorrowIST.getMonth(), tomorrowIST.getDate() + 1).getTime();
+  
+  // Format as YYYY-MM-DD for display
+  const actualTodayStr = formatDateOnly(todayIST);
+  const actualTomorrowStr = formatDateOnly(tomorrowIST);
 
-  // Filter bookings by selected date
-  const dateBookings = bookings.filter(
-    (b) => formatDateOnly(new Date(b.bookingDate)) === selectedDate
-  );
+  console.log("=== PUBLIC QUEUE DISPLAY DEBUG ===");
+  console.log("Current IST time:", istDate.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
+  console.log("Today IST:", todayIST.toString(), "| Timestamp:", todayTimestamp);
+  console.log("actualTodayStr (YYYY-MM-DD):", actualTodayStr);
+  console.log("Tomorrow IST:", tomorrowIST.toString(), "| Timestamp:", tomorrowTimestamp);
+  console.log("actualTomorrowStr (YYYY-MM-DD):", actualTomorrowStr);
+  console.log("Total bookings received:", bookings.length);
+  console.log("=== END DEBUG ===");
+
+  // Filter bookings to ONLY show today and tomorrow using timestamps
+  const filteredBookings = bookings.filter((b) => {
+    const bookingTimestamp = new Date(b.bookingDate).getTime();
+    return bookingTimestamp >= todayTimestamp && bookingTimestamp < dayAfterTimestamp;
+  });
+
+  console.log("Filtered bookings (today + tomorrow only):", filteredBookings.length);
+  if (filteredBookings.length > 0) {
+    console.log("First booking timestamp:", new Date(filteredBookings[0].bookingDate).getTime());
+    console.log("Last booking timestamp:", new Date(filteredBookings[filteredBookings.length - 1].bookingDate).getTime());
+  }
+
+  // Get unique dates from filtered bookings using timestamps
+  const uniqueDateTimestamps = new Set<number>();
+  filteredBookings.forEach(b => {
+    const bookingDate = new Date(b.bookingDate);
+    const midnight = new Date(bookingDate.getFullYear(), bookingDate.getMonth(), bookingDate.getDate());
+    uniqueDateTimestamps.add(midnight.getTime());
+  });
+  
+  const validDates: string[] = [];
+  uniqueDateTimestamps.forEach(timestamp => {
+    const date = new Date(timestamp);
+    validDates.push(formatDateOnly(date));
+  });
+  validDates.sort();
+
+  // Always ensure today and tomorrow are in the tabs (even if no bookings)
+  if (!validDates.includes(actualTodayStr)) {
+    validDates.unshift(actualTodayStr);
+  }
+  if (!validDates.includes(actualTomorrowStr)) {
+    validDates.push(actualTomorrowStr);
+  }
+  validDates.sort();
+
+  console.log("Valid dates to display:", validDates);
+
+  // Filter bookings by selected date using timestamps
+  const selectedDateObj = new Date(selectedDate);
+  const selectedMidnight = new Date(selectedDateObj.getFullYear(), selectedDateObj.getMonth(), selectedDateObj.getDate());
+  const selectedTimestamp = selectedMidnight.getTime();
+  const selectedNextDay = selectedTimestamp + (24 * 60 * 60 * 1000);
+  
+  let dateBookings = filteredBookings.filter((b) => {
+    const bookingTimestamp = new Date(b.bookingDate).getTime();
+    return bookingTimestamp >= selectedTimestamp && bookingTimestamp < selectedNextDay;
+  });
+
+  console.log("Selected date:", selectedDate, "| Bookings:", dateBookings.length);
+
+  // Apply status filter
+  if (statusFilter !== "ALL") {
+    dateBookings = dateBookings.filter((b) => b.status === statusFilter);
+  }
+
+  // Apply search filter (name, booking number, slot number)
+  if (searchQuery.trim()) {
+    const query = searchQuery.toLowerCase().trim();
+    dateBookings = dateBookings.filter((b) => 
+      b.name.toLowerCase().includes(query) ||
+      b.serialNumber.toString().includes(query) ||
+      b.queuePosition.toString().includes(query)
+    );
+  }
+
+  // Pagination
+  const totalPages = Math.ceil(dateBookings.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedBookings = dateBookings.slice(startIndex, endIndex);
 
   // Get current booking (first pending)
   const currentBooking = dateBookings.find((b) => b.status === "PENDING");
-  const currentPosition = currentBooking?.queuePosition || 0;
-
-  // Get actual system date (what's stored in DB)
-  const actualToday = new Date();
-  actualToday.setHours(0, 0, 0, 0);
-  const actualTodayStr = formatDateOnly(actualToday);
-  
-  const actualTomorrow = new Date();
-  actualTomorrow.setDate(actualToday.getDate() + 1);
-  actualTomorrow.setHours(0, 0, 0, 0);
-  const actualTomorrowStr = formatDateOnly(actualTomorrow);
 
   return (
     <div className="space-y-6">
       {/* Date Tabs */}
-      {uniqueDates.length > 0 && (
+      {validDates.length > 0 && (
         <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-1 px-1">
-          {uniqueDates.map((date) => {
-            // Determine label based on actual system dates
+          {validDates.map((date) => {
+            // Determine label based on IST dates
             let label = date;
-            const displayDate = new Date(date);
+            
+            // Parse date string as YYYY-MM-DD without timezone conversion
+            const [y, m, d] = date.split('-').map(Number);
+            const displayDate = new Date(y, m - 1, d);
             
             if (date === actualTodayStr) {
               label = "Today";
@@ -133,89 +225,230 @@ export default function PublicQueueDisplay(): React.ReactElement {
           </div>
           <div className="text-5xl sm:text-6xl md:text-7xl font-bold drop-shadow-lg">#{currentBooking.queuePosition}</div>
           <div className="text-xl sm:text-2xl md:text-3xl font-bold break-words">{currentBooking.name}</div>
-          <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm md:text-base opacity-90 pt-2 sm:pt-3 border-t border-white/30">
+          <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm md:text-base opacity-90 pt-2 sm:pt-3 border-t border-white/30 flex-wrap">
             <span className="flex items-center gap-1 sm:gap-2 bg-white/20 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl">
               <span>🕐</span>
               {formatTime(new Date(currentBooking.slotTime))}
+            </span>
+            <span className="flex items-center gap-1 sm:gap-2 bg-white/20 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl">
+              <span>🎫</span>
+              Booking #{currentBooking.serialNumber}
             </span>
           </div>
         </div>
       )}
 
+      {/* Filters and Search */}
+      <div className="bg-white/10 backdrop-blur-sm border-2 border-white/20 rounded-xl sm:rounded-2xl p-4 sm:p-5 space-y-3 sm:space-y-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          {/* Search */}
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Search by name, booking #, or slot #..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-2.5 bg-white/10 border-2 border-white/20 rounded-xl text-white placeholder-purple-200/60 focus:outline-none focus:border-purple-400 transition-all"
+            />
+          </div>
+
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2.5 bg-white/10 border-2 border-white/20 rounded-xl text-white focus:outline-none focus:border-purple-400 transition-all cursor-pointer"
+          >
+            <option value="ALL" className="bg-gray-800">All Status</option>
+            <option value="PENDING" className="bg-gray-800">Pending</option>
+            <option value="COMPLETED" className="bg-gray-800">Completed</option>
+          </select>
+        </div>
+
+        {/* Results count */}
+        <div className="text-sm text-purple-200">
+          Showing {paginatedBookings.length} of {dateBookings.length} bookings
+        </div>
+      </div>
+
       {/* Queue List */}
       <div className="space-y-3 sm:space-y-4">
         <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white flex items-center gap-2">
           <span className="text-2xl sm:text-3xl">📋</span>
-          <span className="break-words">Queue for {selectedDate === actualTodayStr ? "Today" : selectedDate === actualTomorrowStr ? "Tomorrow" : formatDate(new Date(selectedDate))}</span>
+          <span className="break-words">
+            Queue for {selectedDate === actualTodayStr ? "Today" : selectedDate === actualTomorrowStr ? "Tomorrow" : (() => {
+              const [y, m, d] = selectedDate.split('-').map(Number);
+              return formatDate(new Date(y, m - 1, d));
+            })()}
+          </span>
         </h3>
 
         {dateBookings.length === 0 ? (
           <div className="p-8 sm:p-10 md:p-12 bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm rounded-2xl sm:rounded-3xl text-center border-2 border-white/20">
             <p className="text-5xl sm:text-6xl md:text-7xl mb-3 sm:mb-4 animate-bounce">🎉</p>
-            <p className="text-white font-semibold text-base sm:text-lg md:text-xl">No bookings for this date</p>
-            <p className="text-purple-200 mt-1 sm:mt-2 text-sm sm:text-base">Be the first to book!</p>
+            <p className="text-white font-semibold text-base sm:text-lg md:text-xl">No bookings found</p>
+            <p className="text-purple-200 mt-1 sm:mt-2 text-sm sm:text-base">
+              {searchQuery || statusFilter !== "ALL" ? "Try adjusting your filters" : "Be the first to book!"}
+            </p>
           </div>
         ) : (
-          <div className="space-y-2 sm:space-y-3 max-h-[400px] sm:max-h-[500px] md:max-h-[600px] overflow-y-auto pr-1 sm:pr-2">
-            {dateBookings.map((booking, index) => {
-              const isNext = index === 0 && booking.status === "PENDING";
-              const isPast = booking.status === "COMPLETED";
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-white/10 backdrop-blur-sm border-2 border-white/20 rounded-xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-white/10">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-purple-200">Slot #</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-purple-200">Booking #</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-purple-200">Name</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-purple-200">Time</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-purple-200">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/10">
+                    {paginatedBookings.map((booking) => {
+                      const isNext = booking.status === "PENDING" && booking.id === currentBooking?.id;
+                      const isPast = booking.status === "COMPLETED";
 
-              return (
-                <div
-                  key={booking.id}
-                  className={`p-4 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl border-2 transition-all shadow-lg hover:shadow-2xl transform hover:scale-[1.02] ${
-                    isNext
-                      ? "border-green-400/50 bg-gradient-to-r from-green-500/20 to-green-600/20 backdrop-blur-sm shadow-green-500/20"
-                      : isPast
-                      ? "border-white/10 bg-white/5 backdrop-blur-sm opacity-60"
-                      : "border-purple-400/30 bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2 sm:gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-2 sm:mb-3">
-                        <div className={`px-2.5 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-lg sm:rounded-xl font-bold text-lg sm:text-xl md:text-2xl shadow-lg flex-shrink-0 ${
-                          isNext
-                            ? "bg-gradient-to-r from-green-500 to-green-600 text-white animate-pulse"
-                            : isPast
-                            ? "bg-gray-600 text-white"
-                            : "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                        }`}>
-                          #{booking.queuePosition}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-white text-base sm:text-lg md:text-xl truncate">{booking.name}</p>
+                      return (
+                        <tr
+                          key={booking.id}
+                          className={`transition-all hover:bg-white/5 ${
+                            isNext ? "bg-green-500/10" : isPast ? "opacity-60" : ""
+                          }`}
+                        >
+                          <td className="px-4 py-4">
+                            <div className={`inline-flex items-center justify-center px-3 py-1.5 rounded-lg font-bold text-lg shadow-md ${
+                              isNext
+                                ? "bg-gradient-to-r from-green-500 to-green-600 text-white animate-pulse"
+                                : isPast
+                                ? "bg-gray-600 text-white"
+                                : "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                            }`}>
+                              #{booking.queuePosition}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4">
+                            <span className="text-white font-medium">#{booking.serialNumber}</span>
+                          </td>
+                          <td className="px-4 py-4">
+                            <span className="text-white font-semibold">{booking.name}</span>
+                          </td>
+                          <td className="px-4 py-4">
+                            <span className="text-purple-200">{formatTime(new Date(booking.slotTime))}</span>
+                          </td>
+                          <td className="px-4 py-4">
+                            {isPast ? (
+                              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600/80 text-white rounded-lg font-semibold text-sm">
+                                ✓ Completed
+                              </span>
+                            ) : isNext ? (
+                              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-500 text-white rounded-lg font-semibold text-sm animate-pulse">
+                                🔥 Now Serving
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-500/30 border border-purple-400/50 text-purple-100 rounded-lg font-semibold text-sm">
+                                ⏳ Waiting
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-2 sm:space-y-3">
+              {paginatedBookings.map((booking) => {
+                const isNext = booking.status === "PENDING" && booking.id === currentBooking?.id;
+                const isPast = booking.status === "COMPLETED";
+
+                return (
+                  <div
+                    key={booking.id}
+                    className={`p-4 sm:p-5 rounded-xl sm:rounded-2xl border-2 transition-all shadow-lg hover:shadow-2xl ${
+                      isNext
+                        ? "border-green-400/50 bg-gradient-to-r from-green-500/20 to-green-600/20 backdrop-blur-sm shadow-green-500/20"
+                        : isPast
+                        ? "border-white/10 bg-white/5 backdrop-blur-sm opacity-60"
+                        : "border-purple-400/30 bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2 sm:gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3 flex-wrap">
+                          <div className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg font-bold text-lg sm:text-xl shadow-lg flex-shrink-0 ${
+                            isNext
+                              ? "bg-gradient-to-r from-green-500 to-green-600 text-white animate-pulse"
+                              : isPast
+                              ? "bg-gray-600 text-white"
+                              : "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                          }`}>
+                            #{booking.queuePosition}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-white text-base sm:text-lg truncate">{booking.name}</p>
+                            <p className="text-xs sm:text-sm text-purple-200 flex items-center gap-1 mt-1">
+                              <span>🎫</span>
+                              <span>Booking #{booking.serialNumber}</span>
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-xs sm:text-sm font-semibold text-white flex items-center gap-1 sm:gap-2 justify-end mb-2 sm:mb-3 bg-white/10 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-2 rounded-lg sm:rounded-xl">
-                        <span>🕐</span>
-                        <span className="whitespace-nowrap">{formatTime(new Date(booking.slotTime))}</span>
-                      </p>
-                      <p className="text-xs">
-                        {isPast ? (
-                          <span className="px-2 sm:px-3 py-1 sm:py-2 bg-green-600/80 backdrop-blur-sm text-white rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm shadow-md whitespace-nowrap">
-                            ✓ <span className="hidden sm:inline">Completed</span>
-                          </span>
-                        ) : isNext ? (
-                          <span className="px-2 sm:px-3 py-1 sm:py-2 bg-green-500 text-white rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm animate-pulse shadow-lg whitespace-nowrap">
-                            🔥 <span className="hidden sm:inline">Now Serving</span>
-                          </span>
-                        ) : (
-                          <span className="px-2 sm:px-3 py-1 sm:py-2 bg-purple-500/30 backdrop-blur-sm border border-purple-400/50 text-purple-100 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm whitespace-nowrap">
-                            ⏳ <span className="hidden sm:inline">Waiting</span>
-                          </span>
-                        )}
-                      </p>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-xs sm:text-sm font-semibold text-white flex items-center gap-1 sm:gap-2 justify-end mb-2 sm:mb-3 bg-white/10 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-2 rounded-lg">
+                          <span>🕐</span>
+                          <span className="whitespace-nowrap">{formatTime(new Date(booking.slotTime))}</span>
+                        </p>
+                        <p className="text-xs">
+                          {isPast ? (
+                            <span className="px-2 sm:px-3 py-1 sm:py-2 bg-green-600/80 backdrop-blur-sm text-white rounded-lg font-semibold text-xs sm:text-sm shadow-md whitespace-nowrap">
+                              ✓ <span className="hidden sm:inline">Completed</span>
+                            </span>
+                          ) : isNext ? (
+                            <span className="px-2 sm:px-3 py-1 sm:py-2 bg-green-500 text-white rounded-lg font-semibold text-xs sm:text-sm animate-pulse shadow-lg whitespace-nowrap">
+                              🔥 <span className="hidden sm:inline">Now Serving</span>
+                            </span>
+                          ) : (
+                            <span className="px-2 sm:px-3 py-1 sm:py-2 bg-purple-500/30 backdrop-blur-sm border border-purple-400/50 text-purple-100 rounded-lg font-semibold text-xs sm:text-sm whitespace-nowrap">
+                              ⏳ <span className="hidden sm:inline">Waiting</span>
+                            </span>
+                          )}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 pt-4">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 bg-white/10 border-2 border-white/20 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
+                >
+                  ← Prev
+                </button>
+                <span className="text-white font-medium px-4">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 bg-white/10 border-2 border-white/20 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

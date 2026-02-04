@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { calculateEstimatedTime, validateName, validatePhoneNumber } from "@/lib/utils";
+import { calculateEstimatedTime, validateName, validatePhoneNumber, getSlotNumber, getCurrentTimeIST, getTodayIST, getTomorrowIST } from "@/lib/utils";
 import { BookingRequest, ApiResponse, BookingResponse } from "@/types";
 
 export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse<BookingResponse>>> {
@@ -28,26 +28,22 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
     const bookingDate = new Date(year, month - 1, day); // month is 0-indexed
     bookingDate.setHours(0, 0, 0, 0);
     
-    // Check if date is today or tomorrow (actual system dates)
-    const actualToday = new Date();
-    actualToday.setHours(0, 0, 0, 0);
+    // Check if date is today or tomorrow using IST
+    const todayIST = getTodayIST();
+    const tomorrowIST = getTomorrowIST();
     
-    const actualTomorrow = new Date();
-    actualTomorrow.setDate(actualToday.getDate() + 1);
-    actualTomorrow.setHours(0, 0, 0, 0);
-    
-    const isValidDate = bookingDate.getTime() === actualToday.getTime() || 
-                        bookingDate.getTime() === actualTomorrow.getTime();
+    const isValidDate = bookingDate.getTime() === todayIST.getTime() || 
+                        bookingDate.getTime() === tomorrowIST.getTime();
     
     // Debug logs
-    console.log("=== DATE VALIDATION DEBUG ===");
+    console.log("=== DATE VALIDATION DEBUG (IST) ===");
     console.log("Received bookingDate string:", body.bookingDate);
     console.log("Parsed bookingDate:", bookingDate.toISOString(), "| Local:", bookingDate.toString());
     console.log("bookingDate timestamp:", bookingDate.getTime());
-    console.log("actualToday:", actualToday.toISOString(), "| Local:", actualToday.toString());
-    console.log("actualToday timestamp:", actualToday.getTime());
-    console.log("actualTomorrow:", actualTomorrow.toISOString(), "| Local:", actualTomorrow.toString());
-    console.log("actualTomorrow timestamp:", actualTomorrow.getTime());
+    console.log("todayIST:", todayIST.toISOString(), "| Local:", todayIST.toString());
+    console.log("todayIST timestamp:", todayIST.getTime());
+    console.log("tomorrowIST:", tomorrowIST.toISOString(), "| Local:", tomorrowIST.toString());
+    console.log("tomorrowIST timestamp:", tomorrowIST.getTime());
     console.log("isValidDate:", isValidDate);
     console.log("=== END DEBUG ===");
     
@@ -67,10 +63,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       );
     }
 
-    // Check if slot time is in the past (only for today)
-    const now = new Date();
-    const isTodayBooking = bookingDate.getTime() === actualToday.getTime();
-    if (isTodayBooking && slotTime < now) {
+    // Check if slot time is in the past (only for today) using IST
+    const nowIST = getCurrentTimeIST();
+    const isTodayBooking = bookingDate.getTime() === todayIST.getTime();
+    if (isTodayBooking && slotTime < nowIST) {
       return NextResponse.json(
         { success: false, error: "Cannot book slots in the past" },
         { status: 400 }
@@ -122,67 +118,45 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       );
     }
 
-    // Get or create counter for serial numbers
+    // Get or create counter for this specific date
+    // Format: booking_counter_YYYYMMDD
+    const dateStr = body.bookingDate.replace(/-/g, ''); // "2026-01-22" -> "20260122"
+    const counterId = `booking_counter_${dateStr}`;
+    
     let counter = await prisma.counter.findUnique({
-      where: { id: "booking_counter" },
+      where: { id: counterId },
     });
 
     if (!counter) {
       counter = await prisma.counter.create({
-        data: { id: "booking_counter", value: 0 },
+        data: { id: counterId, value: 0 },
       });
     }
 
-    // Increment counter and get next serial number
+    // Increment counter and get next serial number for this date
     const updatedCounter = await prisma.counter.update({
-      where: { id: "booking_counter" },
+      where: { id: counterId },
       data: { value: { increment: 1 } },
     });
 
     const serialNumber = updatedCounter.value;
 
-    // Get the next queue position for this date based on slot time order
-    // Find all bookings for this date ordered by slot time
-    const existingBookings = await prisma.booking.findMany({
-      where: {
-        bookingDate: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-        status: { in: ["PENDING", "COMPLETED"] },
-      },
-      orderBy: {
-        slotTime: "asc", // Order by slot time
-      },
-    });
+    console.log("=== SERIAL NUMBER DEBUG ===");
+    console.log("Date string:", dateStr);
+    console.log("Counter ID:", counterId);
+    console.log("Counter value:", updatedCounter.value);
+    console.log("Serial number:", serialNumber);
+    console.log("=== END DEBUG ===");
 
-    // Find the correct position based on slot time
-    let queuePosition = 1;
-    for (const existingBooking of existingBookings) {
-      if (slotTime > existingBooking.slotTime) {
-        queuePosition++;
-      }
-    }
+    // Calculate queue position based on slot number
+    // Slot 1 = 08:00, Slot 2 = 08:18, Slot 3 = 08:36, etc.
+    const queuePosition = getSlotNumber(body.slotTime);
 
-    // Update queue positions for bookings that come after this slot time
-    // We need to increment their positions
-    await prisma.booking.updateMany({
-      where: {
-        bookingDate: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-        slotTime: {
-          gte: slotTime,
-        },
-        status: { in: ["PENDING", "COMPLETED"] },
-      },
-      data: {
-        queuePosition: {
-          increment: 1,
-        },
-      },
-    });
+    console.log("=== QUEUE POSITION DEBUG ===");
+    console.log("Slot time:", body.slotTime);
+    console.log("Queue position (slot number):", queuePosition);
+    console.log("Serial number (booking number):", serialNumber);
+    console.log("=== END DEBUG ===");
 
     const estimatedTime = calculateEstimatedTime(queuePosition, bookingDate);
 
