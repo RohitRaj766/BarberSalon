@@ -15,9 +15,11 @@ export default function AdminDashboard(): React.ReactElement {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const router = useRouter();
 
   const fetchBookings = async (): Promise<void> => {
+    setRefreshing(true);
     try {
       const response = await fetch("/api/queue");
       const data = await response.json();
@@ -28,20 +30,18 @@ export default function AdminDashboard(): React.ReactElement {
       }
 
       setBookings(data.data.bookings);
+      setError("");
     } catch (err) {
       setError("Failed to load bookings");
       console.error(err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchBookings();
-
-    // Poll for updates every 3 seconds
-    const interval = setInterval(fetchBookings, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   // Reset to page 1 when filters change
@@ -146,19 +146,41 @@ export default function AdminDashboard(): React.ReactElement {
       <div className="flex items-center justify-between flex-wrap gap-3 sm:gap-4">
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg break-words">
-            Welcome Chotu !
+           Booking Management 
           </h1>
           <p className="text-purple-200 text-xs sm:text-sm md:text-base">Manage all bookings here</p>
         </div>
-        <button
-          onClick={handleLogout}
-          className="px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg sm:rounded-xl font-semibold hover:from-red-600 hover:to-red-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 flex-shrink-0"
-        >
-          <span className="flex items-center gap-1 sm:gap-2">
-            <span>🚪</span>
-            <span className="hidden sm:inline">Logout</span>
-          </span>
-        </button>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <button
+            onClick={fetchBookings}
+            disabled={refreshing}
+            className="text-white hover:scale-110 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Refresh bookings"
+          >
+            <svg 
+              className={`w-6 h-6 ${refreshing ? "animate-spin" : ""}`}
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
+              />
+            </svg>
+          </button>
+          <button
+            onClick={handleLogout}
+            className="px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg sm:rounded-xl font-semibold hover:from-red-600 hover:to-red-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 flex-shrink-0"
+          >
+            <span className="flex items-center gap-1 sm:gap-2">
+              <span>🚪</span>
+              <span className="hidden sm:inline">Logout</span>
+            </span>
+          </button>
+        </div>
       </div>
 
       {error && (
