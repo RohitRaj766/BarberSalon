@@ -27,13 +27,11 @@ export default function PublicQueueDisplay(): React.ReactElement {
 
         setBookings(data.data.bookings);
         
-        // Always set initial selected date to today in IST
+        // Set initial selected date to today in UTC
         const now = new Date();
-        const istString = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
-        const istDate = new Date(istString);
-        const year = istDate.getFullYear();
-        const month = String(istDate.getMonth() + 1).padStart(2, '0');
-        const day = String(istDate.getDate()).padStart(2, '0');
+        const year = now.getUTCFullYear();
+        const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(now.getUTCDate()).padStart(2, '0');
         const todayStr = `${year}-${month}-${day}`;
         
         setSelectedDate(todayStr);
@@ -77,32 +75,21 @@ export default function PublicQueueDisplay(): React.ReactElement {
     );
   }
 
-  // Get actual dates in IST (client-side safe)
+  // Get actual dates in UTC
   const now = new Date();
-  const istString = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
-  const istDate = new Date(istString);
   
-  // Create today and tomorrow at midnight IST using Date constructor
-  const todayIST = new Date(istDate.getFullYear(), istDate.getMonth(), istDate.getDate());
-  const tomorrowIST = new Date(istDate.getFullYear(), istDate.getMonth(), istDate.getDate() + 1);
+  // Create today and tomorrow at midnight UTC
+  const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const tomorrowUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
   
   // Get timestamps for comparison
-  const todayTimestamp = todayIST.getTime();
-  const tomorrowTimestamp = tomorrowIST.getTime();
-  const dayAfterTimestamp = new Date(tomorrowIST.getFullYear(), tomorrowIST.getMonth(), tomorrowIST.getDate() + 1).getTime();
+  const todayTimestamp = todayUTC.getTime();
+  const tomorrowTimestamp = tomorrowUTC.getTime();
+  const dayAfterTimestamp = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 2)).getTime();
   
   // Format as YYYY-MM-DD for display
-  const actualTodayStr = formatDateOnly(todayIST);
-  const actualTomorrowStr = formatDateOnly(tomorrowIST);
-
-  console.log("=== PUBLIC QUEUE DISPLAY DEBUG ===");
-  console.log("Current IST time:", istDate.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
-  console.log("Today IST:", todayIST.toString(), "| Timestamp:", todayTimestamp);
-  console.log("actualTodayStr (YYYY-MM-DD):", actualTodayStr);
-  console.log("Tomorrow IST:", tomorrowIST.toString(), "| Timestamp:", tomorrowTimestamp);
-  console.log("actualTomorrowStr (YYYY-MM-DD):", actualTomorrowStr);
-  console.log("Total bookings received:", bookings.length);
-  console.log("=== END DEBUG ===");
+  const actualTodayStr = formatDateOnly(todayUTC);
+  const actualTomorrowStr = formatDateOnly(tomorrowUTC);
 
   // Filter bookings to ONLY show today and tomorrow using timestamps
   const filteredBookings = bookings.filter((b) => {
@@ -110,17 +97,11 @@ export default function PublicQueueDisplay(): React.ReactElement {
     return bookingTimestamp >= todayTimestamp && bookingTimestamp < dayAfterTimestamp;
   });
 
-  console.log("Filtered bookings (today + tomorrow only):", filteredBookings.length);
-  if (filteredBookings.length > 0) {
-    console.log("First booking timestamp:", new Date(filteredBookings[0].bookingDate).getTime());
-    console.log("Last booking timestamp:", new Date(filteredBookings[filteredBookings.length - 1].bookingDate).getTime());
-  }
-
   // Get unique dates from filtered bookings using timestamps
   const uniqueDateTimestamps = new Set<number>();
   filteredBookings.forEach(b => {
     const bookingDate = new Date(b.bookingDate);
-    const midnight = new Date(bookingDate.getFullYear(), bookingDate.getMonth(), bookingDate.getDate());
+    const midnight = new Date(Date.UTC(bookingDate.getUTCFullYear(), bookingDate.getUTCMonth(), bookingDate.getUTCDate()));
     uniqueDateTimestamps.add(midnight.getTime());
   });
   
@@ -140,11 +121,9 @@ export default function PublicQueueDisplay(): React.ReactElement {
   }
   validDates.sort();
 
-  console.log("Valid dates to display:", validDates);
-
   // Filter bookings by selected date using timestamps
-  const selectedDateObj = new Date(selectedDate);
-  const selectedMidnight = new Date(selectedDateObj.getFullYear(), selectedDateObj.getMonth(), selectedDateObj.getDate());
+  const [selYear, selMonth, selDay] = selectedDate.split('-').map(Number);
+  const selectedMidnight = new Date(Date.UTC(selYear, selMonth - 1, selDay));
   const selectedTimestamp = selectedMidnight.getTime();
   const selectedNextDay = selectedTimestamp + (24 * 60 * 60 * 1000);
   
@@ -152,8 +131,6 @@ export default function PublicQueueDisplay(): React.ReactElement {
     const bookingTimestamp = new Date(b.bookingDate).getTime();
     return bookingTimestamp >= selectedTimestamp && bookingTimestamp < selectedNextDay;
   });
-
-  console.log("Selected date:", selectedDate, "| Bookings:", dateBookings.length);
 
   // Apply status filter
   if (statusFilter !== "ALL") {
