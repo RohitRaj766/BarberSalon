@@ -12,7 +12,7 @@ export default function PublicQueueDisplay(): React.ReactElement {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
 
   useEffect(() => {
     const fetchQueue = async (): Promise<void> => {
@@ -53,7 +53,7 @@ export default function PublicQueueDisplay(): React.ReactElement {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, selectedDate]);
+  }, [searchQuery, statusFilter, selectedDate, itemsPerPage]);
 
   if (loading) {
     return (
@@ -162,12 +162,12 @@ export default function PublicQueueDisplay(): React.ReactElement {
       {validDates.length > 0 && (
         <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-1 px-1">
           {validDates.map((date) => {
-            // Determine label based on IST dates
+            // Determine label based on UTC dates
             let label = date;
             
-            // Parse date string as YYYY-MM-DD without timezone conversion
+            // Parse date string as YYYY-MM-DD in UTC
             const [y, m, d] = date.split('-').map(Number);
-            const displayDate = new Date(y, m - 1, d);
+            const displayDate = new Date(Date.UTC(y, m - 1, d));
             
             if (date === actualTodayStr) {
               label = "Today";
@@ -239,6 +239,17 @@ export default function PublicQueueDisplay(): React.ReactElement {
             <option value="PENDING" className="bg-gray-800">Pending</option>
             <option value="COMPLETED" className="bg-gray-800">Completed</option>
           </select>
+
+          {/* Rows per page */}
+          <select
+            value={itemsPerPage}
+            onChange={(e) => setItemsPerPage(Number(e.target.value))}
+            className="px-4 py-2.5 bg-white/10 border-2 border-white/20 rounded-xl text-white focus:outline-none focus:border-purple-400 transition-all cursor-pointer"
+          >
+            <option value={5} className="bg-gray-800">5 rows</option>
+            <option value={10} className="bg-gray-800">10 rows</option>
+            <option value={50} className="bg-gray-800">50 rows</option>
+          </select>
         </div>
 
         {/* Results count */}
@@ -254,7 +265,7 @@ export default function PublicQueueDisplay(): React.ReactElement {
           <span className="break-words">
             Queue for {selectedDate === actualTodayStr ? "Today" : selectedDate === actualTomorrowStr ? "Tomorrow" : (() => {
               const [y, m, d] = selectedDate.split('-').map(Number);
-              return formatDate(new Date(y, m - 1, d));
+              return formatDate(new Date(Date.UTC(y, m - 1, d)));
             })()}
           </span>
         </h3>
@@ -269,17 +280,17 @@ export default function PublicQueueDisplay(): React.ReactElement {
           </div>
         ) : (
           <>
-            {/* Desktop Table View */}
-            <div className="hidden md:block bg-white/10 backdrop-blur-sm border-2 border-white/20 rounded-xl overflow-hidden">
+            {/* Table View (All Devices) */}
+            <div className="bg-white/10 backdrop-blur-sm border-2 border-white/20 rounded-xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-white/10">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-purple-200">Slot #</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-purple-200">Booking #</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-purple-200">Name</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-purple-200">Time</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-purple-200">Status</th>
+                      <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200">Slot #</th>
+                      <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200">Booking #</th>
+                      <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200">Name</th>
+                      <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200">Time</th>
+                      <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/10">
@@ -294,8 +305,8 @@ export default function PublicQueueDisplay(): React.ReactElement {
                             isNext ? "bg-green-500/10" : isPast ? "opacity-60" : ""
                           }`}
                         >
-                          <td className="px-4 py-4">
-                            <div className={`inline-flex items-center justify-center px-3 py-1.5 rounded-lg font-bold text-lg shadow-md ${
+                          <td className="px-3 sm:px-4 py-3 sm:py-4">
+                            <div className={`inline-flex items-center justify-center px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg font-bold text-sm sm:text-lg shadow-md ${
                               isNext
                                 ? "bg-gradient-to-r from-green-500 to-green-600 text-white animate-pulse"
                                 : isPast
@@ -305,27 +316,27 @@ export default function PublicQueueDisplay(): React.ReactElement {
                               #{booking.queuePosition}
                             </div>
                           </td>
-                          <td className="px-4 py-4">
-                            <span className="text-white font-medium">#{booking.serialNumber}</span>
+                          <td className="px-3 sm:px-4 py-3 sm:py-4">
+                            <span className="text-white font-medium text-sm sm:text-base">#{booking.serialNumber}</span>
                           </td>
-                          <td className="px-4 py-4">
-                            <span className="text-white font-semibold">{booking.name}</span>
+                          <td className="px-3 sm:px-4 py-3 sm:py-4">
+                            <span className="text-white font-semibold text-sm sm:text-base">{booking.name}</span>
                           </td>
-                          <td className="px-4 py-4">
-                            <span className="text-purple-200">{formatTime(new Date(booking.slotTime))}</span>
+                          <td className="px-3 sm:px-4 py-3 sm:py-4">
+                            <span className="text-purple-200 text-xs sm:text-base">{formatTime(new Date(booking.slotTime))}</span>
                           </td>
-                          <td className="px-4 py-4">
+                          <td className="px-3 sm:px-4 py-3 sm:py-4">
                             {isPast ? (
-                              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600/80 text-white rounded-lg font-semibold text-sm">
-                                ✓ Completed
+                              <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-green-600/80 text-white rounded-lg font-semibold text-xs sm:text-sm whitespace-nowrap">
+                                ✓ <span className="hidden sm:inline">Completed</span>
                               </span>
                             ) : isNext ? (
-                              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-500 text-white rounded-lg font-semibold text-sm animate-pulse">
-                                🔥 Now Serving
+                              <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-green-500 text-white rounded-lg font-semibold text-xs sm:text-sm animate-pulse whitespace-nowrap">
+                                🔥 <span className="hidden sm:inline">Now</span>
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-500/30 border border-purple-400/50 text-purple-100 rounded-lg font-semibold text-sm">
-                                ⏳ Waiting
+                              <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-purple-500/30 border border-purple-400/50 text-purple-100 rounded-lg font-semibold text-xs sm:text-sm whitespace-nowrap">
+                                ⏳ <span className="hidden sm:inline">Wait</span>
                               </span>
                             )}
                           </td>
@@ -337,92 +348,74 @@ export default function PublicQueueDisplay(): React.ReactElement {
               </div>
             </div>
 
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-2 sm:space-y-3">
-              {paginatedBookings.map((booking) => {
-                const isNext = booking.status === "PENDING" && booking.id === currentBooking?.id;
-                const isPast = booking.status === "COMPLETED";
-
-                return (
-                  <div
-                    key={booking.id}
-                    className={`p-4 sm:p-5 rounded-xl sm:rounded-2xl border-2 transition-all shadow-lg hover:shadow-2xl ${
-                      isNext
-                        ? "border-green-400/50 bg-gradient-to-r from-green-500/20 to-green-600/20 backdrop-blur-sm shadow-green-500/20"
-                        : isPast
-                        ? "border-white/10 bg-white/5 backdrop-blur-sm opacity-60"
-                        : "border-purple-400/30 bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2 sm:gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3 flex-wrap">
-                          <div className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg font-bold text-lg sm:text-xl shadow-lg flex-shrink-0 ${
-                            isNext
-                              ? "bg-gradient-to-r from-green-500 to-green-600 text-white animate-pulse"
-                              : isPast
-                              ? "bg-gray-600 text-white"
-                              : "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                          }`}>
-                            #{booking.queuePosition}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-bold text-white text-base sm:text-lg truncate">{booking.name}</p>
-                            <p className="text-xs sm:text-sm text-purple-200 flex items-center gap-1 mt-1">
-                              <span>🎫</span>
-                              <span>Booking #{booking.serialNumber}</span>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-xs sm:text-sm font-semibold text-white flex items-center gap-1 sm:gap-2 justify-end mb-2 sm:mb-3 bg-white/10 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-2 rounded-lg">
-                          <span>🕐</span>
-                          <span className="whitespace-nowrap">{formatTime(new Date(booking.slotTime))}</span>
-                        </p>
-                        <p className="text-xs">
-                          {isPast ? (
-                            <span className="px-2 sm:px-3 py-1 sm:py-2 bg-green-600/80 backdrop-blur-sm text-white rounded-lg font-semibold text-xs sm:text-sm shadow-md whitespace-nowrap">
-                              ✓ <span className="hidden sm:inline">Completed</span>
-                            </span>
-                          ) : isNext ? (
-                            <span className="px-2 sm:px-3 py-1 sm:py-2 bg-green-500 text-white rounded-lg font-semibold text-xs sm:text-sm animate-pulse shadow-lg whitespace-nowrap">
-                              🔥 <span className="hidden sm:inline">Now Serving</span>
-                            </span>
-                          ) : (
-                            <span className="px-2 sm:px-3 py-1 sm:py-2 bg-purple-500/30 backdrop-blur-sm border border-purple-400/50 text-purple-100 rounded-lg font-semibold text-xs sm:text-sm whitespace-nowrap">
-                              ⏳ <span className="hidden sm:inline">Waiting</span>
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-4">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 bg-white/10 border-2 border-white/20 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
-                >
-                  ← Prev
-                </button>
-                <span className="text-white font-medium px-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                <div className="text-sm text-purple-200">
                   Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 bg-white/10 border-2 border-white/20 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all"
-                >
-                  Next →
-                </button>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 bg-white/10 border-2 border-white/20 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all text-sm"
+                  >
+                    First
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 bg-white/10 border-2 border-white/20 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all text-sm"
+                  >
+                    ← Prev
+                  </button>
+                  
+                  {/* Page numbers */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`px-3 py-2 rounded-lg font-semibold transition-all text-sm ${
+                            currentPage === pageNum
+                              ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                              : "bg-white/10 border-2 border-white/20 text-white hover:bg-white/20"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 bg-white/10 border-2 border-white/20 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all text-sm"
+                  >
+                    Next →
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 bg-white/10 border-2 border-white/20 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-all text-sm"
+                  >
+                    Last
+                  </button>
+                </div>
               </div>
             )}
           </>
