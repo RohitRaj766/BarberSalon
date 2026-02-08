@@ -44,7 +44,34 @@ export default function SlotSelector({ onSlotSelect }: SlotSelectorProps): React
   }, []);
 
   const currentDaySlots = days.find((d) => d.date === selectedDate);
-  const slots = currentDaySlots?.slots || [];
+  const allSlots = currentDaySlots?.slots || [];
+  
+  // Filter out past time slots for today
+  const slots = allSlots.filter((slot) => {
+    // Check if selected date is today
+    const selectedDateObj = new Date(selectedDate);
+    const today = new Date();
+    const isToday = selectedDateObj.toDateString() === today.toDateString();
+    
+    if (isToday) {
+      // Get current time
+      const currentHours = today.getHours();
+      const currentMinutes = today.getMinutes();
+      
+      // Parse slot time
+      const [slotHours, slotMinutes] = slot.time.split(':').map(Number);
+      
+      // Filter out if slot time has passed
+      if (slotHours < currentHours) {
+        return false;
+      }
+      if (slotHours === currentHours && slotMinutes <= currentMinutes) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
 
   const handleTimeSelect = (time: string): void => {
     setSelectedTime(time);

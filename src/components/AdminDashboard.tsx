@@ -348,7 +348,7 @@ export default function AdminDashboard(): React.ReactElement {
                       <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200">Book #</th>
                       <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200">Name</th>
                       <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200">Phone</th>
-                      <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200 hidden md:table-cell">Date</th>
+                      <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200">Date</th>
                       <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200">Time</th>
                       <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-purple-200">Status</th>
                       <th className="px-2 sm:px-4 py-3 text-center text-xs sm:text-sm font-semibold text-purple-200">Actions</th>
@@ -393,7 +393,7 @@ export default function AdminDashboard(): React.ReactElement {
                               </a>
                             </div>
                           </td>
-                          <td className="px-2 sm:px-4 py-3 sm:py-4 hidden md:table-cell">
+                          <td className="px-2 sm:px-4 py-3 sm:py-4">
                             <span className="text-purple-200 text-xs">{formatDate(new Date(booking.slotTime))}</span>
                           </td>
                           <td className="px-2 sm:px-4 py-3 sm:py-4">
